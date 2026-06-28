@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-fundo text-gray-800 font-nunito;
+  }
+
+  h1, h2, h3 {
+    @apply font-fredoka;
+  }
+}
+
+@layer components {
+
+  /* ── Card ── */
+  .card {
+    @apply bg-white rounded-card shadow-card border border-[#e8d9c4] p-6;
+  }
+
+  /* ── Botão primário (roxo) ── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-roxo text-white font-fredoka text-base
+           px-6 py-2.5 rounded-btn
+           shadow-cartoon
+           transition-all active:translate-y-1 active:shadow-none
+           hover:bg-roxo-escuro cursor-pointer;
+  }
+
+  /* ── Botão secundário (contorno) ── */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-white text-roxo font-fredoka text-base
+           border-2 border-roxo
+           px-6 py-2.5 rounded-btn
+           shadow-cartoon
+           transition-all active:translate-y-1 active:shadow-none
+           hover:bg-roxo-claro cursor-pointer;
+  }
+
+  /* ── Botão sucesso (amarelo) ── */
+  .btn-success {
+    @apply inline-flex items-center justify-center gap-2
+           bg-amarelo text-gray-900 font-fredoka text-base
+           px-6 py-2.5 rounded-btn
+           shadow-cartoon-amarelo
+           transition-all active:translate-y-1 active:shadow-none
+           hover:bg-amarelo-escuro cursor-pointer;
+  }
+
+  /* ── Botão perigo (vermelho) ── */
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2
+           bg-red-500 text-white font-fredoka text-base
+           px-6 py-2.5 rounded-btn
+           shadow-cartoon-red
+           transition-all active:translate-y-1 active:shadow-none
+           hover:bg-red-600 cursor-pointer;
+  }
+
+  /* ── Input ── */
+  .input {
+    @apply w-full bg-white border-2 border-[#d6c4a8] rounded-xl
+           px-4 py-2.5 font-nunito text-gray-800
+           focus:outline-none focus:border-roxo
+           transition-colors placeholder:text-gray-400;
+  }
+
+  /* ── Label ── */
+  .label {
+    @apply block text-sm font-bold text-gray-600 mb-1 font-nunito;
+  }
+
+  /* ── Título de seção ── */
+  .titulo-secao {
+    @apply font-fredoka text-roxo text-lg;
+  }
+
+  /* ── Badge de turma genérico ── */
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold font-nunito;
+  }
+}
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(0)    rotate(0deg)   scaleX(1);   opacity: 1; }
+  50%  { scaleX: -1; }
+  100% { transform: translateY(100vh) rotate(720deg) scaleX(-1); opacity: 0; }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear forwards;
+}

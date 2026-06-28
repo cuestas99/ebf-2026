@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Crianca {
+  id                Int       @id @default(autoincrement())
+
+  nome              String
+  idade             Int
+  dataNascimento    DateTime
+  turma             String
+
+  rua               String
+  numero            String
+  complemento       String?
+  bairro            String
+  cidade            String
+
+  nomePai           String
+  nomeMae           String
+  whatsapp          String
+  outroContato      String
+
+  // Autorização de retirada
+  autorizadoNome1       String?
+  autorizadoParentesco1 String?
+  autorizadoNome2       String?
+  autorizadoParentesco2 String?
+
+  comoSoube         String?
+  pertenceIgreja    Boolean   @default(false)
+  qualIgreja        String?
+  restricaoAlimentar Boolean  @default(false)
+  qualRestricao     String?
+
+  aceitouTermo1     Boolean   @default(false)
+  aceitouTermo2     Boolean   @default(false)
+  aceitouTermo3     Boolean   @default(false)
+
+  criadoEm         DateTime  @default(now())
+  atualizadoEm     DateTime  @updatedAt
+
+  checkins          CheckIn[]
+}
+
+model CheckIn {
+  id         Int      @id @default(autoincrement())
+  criancaId  Int
+  dia        Int
+  criadoEm  DateTime @default(now())
+  crianca    Crianca  @relation(fields: [criancaId], references: [id], onDelete: Cascade)
+
+  @@unique([criancaId, dia])
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senha     String
+  perfil    String   // ADMIN | RECEPCIONIST
+  criadoEm DateTime @default(now())
+}
