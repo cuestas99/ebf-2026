@@ -37,6 +37,20 @@ export async function GET() {
       : 0,
   }))
 
+  // Distribuição por idade (2 a 12 anos)
+  const todasIdades = criancas.map(c => c.idade).filter(i => i >= 2 && i <= 12)
+  const minIdade = todasIdades.length ? Math.min(...todasIdades) : 2
+  const maxIdade = todasIdades.length ? Math.max(...todasIdades) : 12
+  const porIdade = Array.from({ length: maxIdade - minIdade + 1 }, (_, i) => {
+    const idade = minIdade + i
+    const kids  = criancas.filter(c => c.idade === idade)
+    return {
+      idade,
+      total: kids.length,
+      percentual: totalCriancas > 0 ? Math.round((kids.length / totalCriancas) * 100) : 0,
+    }
+  })
+
   const tabela = criancas.map((c) => ({
     id: c.id,
     nome: c.nome,
@@ -61,7 +75,7 @@ export async function GET() {
     totalDias: c.checkins.length,
   }))
 
-  return NextResponse.json({ totalCriancas, porTurma, porDia, tabela }, {
+  return NextResponse.json({ totalCriancas, porTurma, porDia, porIdade, tabela }, {
     headers: { 'Cache-Control': 'no-store' },
   })
 }

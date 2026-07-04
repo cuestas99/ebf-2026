@@ -17,10 +17,12 @@ type CriancaTabela = {
   restricaoAlimentar: boolean; qualRestricao: string | null
   diasPresente: number[]; totalDias: number
 }
+type IdadeRelatorio = { idade: number; total: number; percentual: number }
 type RelatorioData = {
   totalCriancas: number
   porTurma: TurmaRelatorio[]
   porDia: DiaRelatorio[]
+  porIdade: IdadeRelatorio[]
   tabela: CriancaTabela[]
 }
 
@@ -168,6 +170,63 @@ export default function RelatorioPage() {
                 </div>
               )
             })}
+          </div>
+
+          {/* Por idade */}
+          <div className="card">
+            <h2 className="font-fredoka text-roxo text-xl mb-4">🎂 Inscritos por Idade</h2>
+            <div className="space-y-2">
+              {data.porIdade.map(({ idade, total, percentual }) => {
+                const maximo = Math.max(...data.porIdade.map(i => i.total))
+                const pctBarra = maximo > 0 ? Math.round((total / maximo) * 100) : 0
+                return (
+                  <div key={idade} className="flex items-center gap-3">
+                    <span className="w-16 text-sm font-bold text-gray-600 font-nunito shrink-0">
+                      {idade} anos
+                    </span>
+                    <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
+                      {total > 0 && (
+                        <div
+                          className="h-full bg-amarelo rounded-full flex items-center justify-end pr-3 transition-all"
+                          style={{ width: `${Math.max(pctBarra, 6)}%` }}
+                        >
+                          <span className="text-gray-900 text-xs font-bold font-nunito">{total}</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="w-10 text-xs text-gray-400 font-nunito text-right shrink-0">
+                      {percentual}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-4 pt-4 border-t border-[#f0e6d6] grid grid-cols-3 gap-3 text-center">
+              {(() => {
+                const media = data.porIdade.length > 0
+                  ? (data.porIdade.reduce((acc, i) => acc + i.idade * i.total, 0) / (data.totalCriancas || 1)).toFixed(1)
+                  : '—'
+                const moda = data.porIdade.reduce((a, b) => a.total >= b.total ? a : b, data.porIdade[0])
+                const menores = data.porIdade.filter(i => i.idade <= 6).reduce((a, b) => a + b.total, 0)
+                const maiores = data.porIdade.filter(i => i.idade >= 7).reduce((a, b) => a + b.total, 0)
+                return (
+                  <>
+                    <div className="bg-roxo-claro rounded-card p-3">
+                      <div className="font-fredoka text-roxo text-2xl">{media}</div>
+                      <div className="text-xs text-gray-500 font-nunito">Média de idade</div>
+                    </div>
+                    <div className="bg-amarelo/20 rounded-card p-3">
+                      <div className="font-fredoka text-amarelo-escuro text-2xl">{moda?.idade ?? '—'}</div>
+                      <div className="text-xs text-gray-500 font-nunito">Idade mais comum</div>
+                    </div>
+                    <div className="bg-green-50 rounded-card p-3">
+                      <div className="font-fredoka text-green-600 text-2xl">{menores}↕{maiores}</div>
+                      <div className="text-xs text-gray-500 font-nunito">≤6 anos · ≥7 anos</div>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
           </div>
         </div>
       )}
