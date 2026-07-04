@@ -26,6 +26,44 @@ type RelatorioData = {
   tabela: CriancaTabela[]
 }
 
+function CardTurmas({ porTurma, totalCriancas }: { porTurma: TurmaRelatorio[]; totalCriancas: number }) {
+  const maximo = Math.max(...porTurma.map(t => t.total), 1)
+  const maior = porTurma.reduce((a, b) => a.total >= b.total ? a : b, porTurma[0])
+  return (
+    <div className="card">
+      <h2 className="font-fredoka text-roxo text-xl mb-4">👥 Inscritos por Turma</h2>
+      <div className="space-y-3">
+        {porTurma.map((t) => {
+          const info = TURMAS[t.turma as TurmaKey]
+          const pct = (t.total / maximo) * 100
+          return (
+            <div key={t.turma} className="flex items-center gap-3">
+              <span className="text-xl w-7 shrink-0">{t.emoji}</span>
+              <span className="w-36 text-sm font-bold text-gray-600 font-nunito truncate shrink-0">
+                {t.label.split(' (')[0]}
+              </span>
+              <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${t.total > 0 ? Math.max(pct, 4) : 0}%`, backgroundColor: info?.hex ?? '#8B3FBE' }}
+                />
+              </div>
+              <span className="w-8 text-sm font-bold text-gray-700 font-nunito text-right shrink-0">{t.total}</span>
+              <span className="w-10 text-xs text-gray-400 font-nunito text-right shrink-0">
+                {totalCriancas > 0 ? Math.round((t.total / totalCriancas) * 100) : 0}%
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-4 pt-4 border-t border-[#f0e6d6] flex items-center justify-between text-sm font-nunito text-gray-500">
+        <span>Total inscrito: <strong className="text-roxo font-fredoka text-lg">{totalCriancas}</strong> crianças</span>
+        <span>Maior turma: <strong className="text-gray-700">{maior?.label.split(' (')[0] ?? '—'}</strong></span>
+      </div>
+    </div>
+  )
+}
+
 export default function RelatorioPage() {
   const [data, setData] = useState<RelatorioData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -119,51 +157,7 @@ export default function RelatorioPage() {
         <div className="space-y-4">
 
           {/* Inscritos por turma */}
-          <div className="card">
-            <h2 className="font-fredoka text-roxo text-xl mb-4">👥 Inscritos por Turma</h2>
-            {(() => {
-                const maximo = Math.max(...data.porTurma.map(x => x.total))
-                return (
-                  <div className="space-y-3">
-                    {data.porTurma.map((t) => {
-                      const info = TURMAS[t.turma as TurmaKey]
-                      const pctBarra = maximo > 0 ? (t.total / maximo) * 100 : 0
-                      return (
-                        <div key={t.turma} className="flex items-center gap-3">
-                          <span className="text-xl w-7 shrink-0">{t.emoji}</span>
-                          <span className="w-36 text-sm font-bold text-gray-600 font-nunito truncate shrink-0">
-                            {t.label.split(' (')[0]}
-                          </span>
-                          <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${t.total > 0 ? Math.max(pctBarra, 4) : 0}%`,
-                                backgroundColor: info?.hex ?? '#8B3FBE',
-                              }}
-                            />
-                          </div>
-                          <span className="w-8 text-sm font-bold text-gray-700 font-nunito text-right shrink-0">{t.total}</span>
-                          <span className="w-10 text-xs text-gray-400 font-nunito text-right shrink-0">
-                            {data.totalCriancas > 0 ? Math.round((t.total / data.totalCriancas) * 100) : 0}%
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })()}
-            </div>
-            <div className="mt-4 pt-4 border-t border-[#f0e6d6] flex items-center justify-between text-sm font-nunito text-gray-500">
-              <span>Total inscrito: <strong className="text-roxo font-fredoka text-lg">{data.totalCriancas}</strong> crianças</span>
-              <span>
-                Maior turma:{' '}
-                <strong className="text-gray-700">
-                  {data.porTurma.reduce((a, b) => a.total >= b.total ? a : b, data.porTurma[0])?.label.split(' (')[0] ?? '—'}
-                </strong>
-              </span>
-            </div>
-          </div>
+          <CardTurmas porTurma={data.porTurma} totalCriancas={data.totalCriancas} />
 
           {/* Presença por dia */}
           <div className="card">
