@@ -30,9 +30,14 @@ export default function RelatorioPage() {
   const [turmaBusca, setTurmaBusca] = useState('')
   const [abaAtiva, setAbaAtiva] = useState<'resumo' | 'tabela' | 'certificados'>('resumo')
 
-  useEffect(() => {
-    fetch('/api/relatorio').then((r) => r.json()).then((d) => { setData(d); setLoading(false) })
-  }, [])
+  function carregarDados() {
+    setLoading(true)
+    fetch('/api/relatorio', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false) })
+  }
+
+  useEffect(() => { carregarDados() }, [])
 
   async function exportarExcel() {
     const { utils, writeFile } = await import('xlsx')
@@ -81,7 +86,13 @@ export default function RelatorioPage() {
           <h1 className="font-fredoka text-3xl text-roxo">📊 Relatórios</h1>
           <p className="text-gray-500 text-sm font-nunito">{data.totalCriancas} crianças cadastradas</p>
         </div>
-        <button onClick={exportarExcel} className="btn-primary">📥 Exportar Excel</button>
+        <div className="flex gap-2">
+          <button onClick={carregarDados} disabled={loading}
+            className="btn-secondary disabled:opacity-50 disabled:shadow-none disabled:translate-y-0">
+            {loading ? '⏳' : '🔄'} Atualizar
+          </button>
+          <button onClick={exportarExcel} className="btn-primary">📥 Exportar Excel</button>
+        </div>
       </div>
 
       {/* Abas */}

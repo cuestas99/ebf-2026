@@ -61,5 +61,7 @@ export async function GET() {
     totalDias: c.checkins.length,
   }))
 
-  return NextResponse.json({ totalCriancas, porTurma, porDia, tabela })
+  return NextResponse.json({ totalCriancas, porTurma, porDia, tabela }, {
+    headers: { 'Cache-Control': 'no-store' },
+  })
 }
