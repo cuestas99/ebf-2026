@@ -44,7 +44,7 @@ export default function EntradaPage() {
     if (nums.length < 8) return
     setBuscando(true)
     setErroNaoEncontrado(false)
-    const res = await fetch(`/api/criancas?whatsapp=${nums}`)
+    const res = await fetch(`/api/entrada?whatsapp=${nums}`)
     const data: Crianca[] = await res.json()
     setBuscando(false)
     if (data.length === 0) {
