@@ -154,8 +154,8 @@ export default async function Home() {
                 <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
                   {count > 0 && (
                     <div
-                      className={`h-full ${info.cor} rounded-full flex items-center justify-end pr-3 transition-all`}
-                      style={{ width: `${Math.max(pct, 4)}%` }}
+                      className="h-full rounded-full flex items-center justify-end pr-3 transition-all"
+                      style={{ width: `${Math.max(pct, 4)}%`, backgroundColor: info.hex }}
                     >
                       <span className="text-white text-xs font-bold font-nunito">{count}</span>
                     </div>

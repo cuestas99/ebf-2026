@@ -121,33 +121,38 @@ export default function RelatorioPage() {
           {/* Inscritos por turma */}
           <div className="card">
             <h2 className="font-fredoka text-roxo text-xl mb-4">👥 Inscritos por Turma</h2>
-            <div className="space-y-3">
-              {data.porTurma.map((t) => {
-                const info = TURMAS[t.turma as TurmaKey]
+            {(() => {
                 const maximo = Math.max(...data.porTurma.map(x => x.total))
-                const pctBarra = maximo > 0 ? Math.round((t.total / maximo) * 100) : 0
                 return (
-                  <div key={t.turma} className="flex items-center gap-3">
-                    <span className="text-xl w-7 shrink-0">{t.emoji}</span>
-                    <span className="w-36 text-sm font-bold text-gray-600 font-nunito truncate shrink-0">
-                      {t.label.split(' (')[0]}
-                    </span>
-                    <div className="flex-1 bg-[#f0e6d6] rounded-full h-8 overflow-hidden border border-[#e0d0bc]">
-                      {t.total > 0 && (
-                        <div
-                          className={`h-full ${info?.cor} rounded-full flex items-center justify-end pr-3 transition-all`}
-                          style={{ width: `${Math.max(pctBarra, 6)}%` }}
-                        >
-                          <span className="text-white text-xs font-bold font-nunito">{t.total}</span>
+                  <div className="space-y-3">
+                    {data.porTurma.map((t) => {
+                      const info = TURMAS[t.turma as TurmaKey]
+                      const pctBarra = maximo > 0 ? (t.total / maximo) * 100 : 0
+                      return (
+                        <div key={t.turma} className="flex items-center gap-3">
+                          <span className="text-xl w-7 shrink-0">{t.emoji}</span>
+                          <span className="w-36 text-sm font-bold text-gray-600 font-nunito truncate shrink-0">
+                            {t.label.split(' (')[0]}
+                          </span>
+                          <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${t.total > 0 ? Math.max(pctBarra, 4) : 0}%`,
+                                backgroundColor: info?.hex ?? '#8B3FBE',
+                              }}
+                            />
+                          </div>
+                          <span className="w-8 text-sm font-bold text-gray-700 font-nunito text-right shrink-0">{t.total}</span>
+                          <span className="w-10 text-xs text-gray-400 font-nunito text-right shrink-0">
+                            {data.totalCriancas > 0 ? Math.round((t.total / data.totalCriancas) * 100) : 0}%
+                          </span>
                         </div>
-                      )}
-                    </div>
-                    <span className="w-12 text-xs text-gray-400 font-nunito text-right shrink-0">
-                      {data.totalCriancas > 0 ? Math.round((t.total / data.totalCriancas) * 100) : 0}%
-                    </span>
+                      )
+                    })}
                   </div>
                 )
-              })}
+              })()}
             </div>
             <div className="mt-4 pt-4 border-t border-[#f0e6d6] flex items-center justify-between text-sm font-nunito text-gray-500">
               <span>Total inscrito: <strong className="text-roxo font-fredoka text-lg">{data.totalCriancas}</strong> crianças</span>
@@ -228,15 +233,15 @@ export default function RelatorioPage() {
                       {idade} anos
                     </span>
                     <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
-                      {total > 0 && (
-                        <div
-                          className="h-full bg-amarelo rounded-full flex items-center justify-end pr-3 transition-all"
-                          style={{ width: `${Math.max(pctBarra, 6)}%` }}
-                        >
-                          <span className="text-gray-900 text-xs font-bold font-nunito">{total}</span>
-                        </div>
-                      )}
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${total > 0 ? Math.max(pctBarra, 4) : 0}%`,
+                          backgroundColor: '#F5C518',
+                        }}
+                      />
                     </div>
+                    <span className="w-8 text-sm font-bold text-gray-700 font-nunito text-right shrink-0">{total}</span>
                     <span className="w-10 text-xs text-gray-400 font-nunito text-right shrink-0">
                       {percentual}%
                     </span>

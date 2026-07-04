@@ -1,8 +1,8 @@
 export const TURMAS = {
-  BEBES:            { label: 'Bebês/Maternal (2-4 anos)', cor: 'bg-pink-500',   corClaro: 'bg-pink-100',   texto: 'text-pink-700',   borda: 'border-pink-500',   emoji: '👶' },
-  JARDIM:           { label: 'Jardim (5-6 anos)',         cor: 'bg-green-500',  corClaro: 'bg-green-100',  texto: 'text-green-700',  borda: 'border-green-500',  emoji: '🌱' },
-  JUNIORES:         { label: 'Juniores (7-9 anos)',       cor: 'bg-blue-500',   corClaro: 'bg-blue-100',   texto: 'text-blue-700',   borda: 'border-blue-500',   emoji: '⭐' },
-  PRE_ADOLESCENTES: { label: 'Pré-Adolescentes (10-12)', cor: 'bg-purple-500', corClaro: 'bg-purple-100', texto: 'text-purple-700', borda: 'border-purple-500', emoji: '🚀' },
+  BEBES:            { label: 'Bebês/Maternal (2-4 anos)', cor: 'bg-pink-500',   corClaro: 'bg-pink-100',   texto: 'text-pink-700',   borda: 'border-pink-500',   emoji: '👶', hex: '#ec4899' },
+  JARDIM:           { label: 'Jardim (5-6 anos)',         cor: 'bg-green-500',  corClaro: 'bg-green-100',  texto: 'text-green-700',  borda: 'border-green-500',  emoji: '🌱', hex: '#22c55e' },
+  JUNIORES:         { label: 'Juniores (7-9 anos)',       cor: 'bg-blue-500',   corClaro: 'bg-blue-100',   texto: 'text-blue-700',   borda: 'border-blue-500',   emoji: '⭐', hex: '#3b82f6' },
+  PRE_ADOLESCENTES: { label: 'Pré-Adolescentes (10-12)', cor: 'bg-purple-500', corClaro: 'bg-purple-100', texto: 'text-purple-700', borda: 'border-purple-500', emoji: '🚀', hex: '#a855f7' },
 }
 
 export type TurmaKey = keyof typeof TURMAS
