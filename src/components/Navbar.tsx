@@ -12,6 +12,7 @@ const LINKS_ADMIN = [
   { href: '/criancas',  label: '👧 Crianças' },
   { href: '/relatorio', label: '📊 Relatório' },
   { href: '/usuarios',  label: '👤 Usuários' },
+  { href: '/importar',  label: '📥 Importar' },
 ]
 
 const LINKS_RECEPCIONIST = [
