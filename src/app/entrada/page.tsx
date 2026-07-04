@@ -67,7 +67,7 @@ export default function EntradaPage() {
   }
 
   async function confirmarCheckin() {
-    const ids = [...selecionadas]
+    const ids = Array.from(selecionadas)
     if (ids.length === 0) return
     setEnviando(true)
     await Promise.all(
