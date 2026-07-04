@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
@@ -19,7 +19,7 @@
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
-    "next": "^15.2.8",
+    "next": "^14.2.35",
     "react": "^18",
     "react-dom": "^18",
     "xlsx": "^0.18.5"
