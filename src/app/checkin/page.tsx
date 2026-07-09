@@ -38,7 +38,7 @@ export default function CheckinPage() {
     const params = new URLSearchParams()
     if (busca) params.set('busca', busca)
     if (turmaBusca) params.set('turma', turmaBusca)
-    const res = await fetch(`/api/criancas?${params}`)
+    const res = await fetch(`/api/criancas?${params}`, { cache: 'no-store' })
     setCriancas(await res.json())
     setLoading(false)
   }, [busca, turmaBusca])

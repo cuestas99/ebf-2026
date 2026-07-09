@@ -17,6 +17,7 @@ function formatWhatsApp(tel: string) {
 
 export default function CriancasPage() {
   const [criancas, setCriancas] = useState<Crianca[]>([])
+  const [total, setTotal] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
   const [turmaBusca, setTurmaBusca] = useState('')
@@ -24,13 +25,17 @@ export default function CriancasPage() {
   const [excluindo, setExcluindo] = useState(false)
   const [feedback, setFeedback] = useState('')
 
+  const filtroAtivo = Boolean(busca || turmaBusca)
+
   const buscar = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
     if (busca) params.set('busca', busca)
     if (turmaBusca) params.set('turma', turmaBusca)
-    const res = await fetch(`/api/criancas?${params}`)
-    setCriancas(await res.json())
+    const res = await fetch(`/api/criancas?${params}`, { cache: 'no-store' })
+    const lista = await res.json()
+    setCriancas(lista)
+    if (!busca && !turmaBusca) setTotal(lista.length)
     setLoading(false)
   }, [busca, turmaBusca])
 
@@ -57,7 +62,10 @@ export default function CriancasPage() {
         <div>
           <h1 className="font-fredoka text-3xl text-roxo">👧 Crianças Cadastradas</h1>
           <p className="text-gray-500 text-sm font-nunito">
-            {criancas.length} crianças{comRestricao > 0 ? ` · ${comRestricao} com restrição alimentar` : ''}
+            {filtroAtivo
+              ? `${criancas.length} resultado(s) de ${total ?? '…'} cadastradas`
+              : `${criancas.length} crianças cadastradas`}
+            {comRestricao > 0 ? ` · ${comRestricao} com restrição alimentar` : ''}
           </p>
         </div>
         <Link href="/cadastro" className="btn-primary">✏️ Nova Inscrição</Link>
