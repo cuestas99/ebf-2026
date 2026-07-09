@@ -5,7 +5,7 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'ebf2026-ipb-silva-jardim-secret'
 )
 
-const PUBLICO = ['/login', '/setup', '/entrada', '/api/auth/', '/api/entrada']
+const PUBLICO = ['/login', '/setup', '/entrada', '/api/auth/', '/api/entrada', '/api/evento']
 const SO_RECEPCIONIST = ['/checkin', '/api/checkin']
 
 export async function middleware(req: NextRequest) {

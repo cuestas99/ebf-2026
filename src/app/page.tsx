@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { TURMAS, TurmaKey } from '@/lib/turmas'
-import { diaDoEvento, faltamDias, DIAS_SEMANA, EVENTO_INICIO, EVENTO_FIM } from '@/lib/evento'
+import { diaDoEvento, faltamDias, EVENTO_INICIO_LABEL, EVENTO_FIM_LABEL } from '@/lib/evento'
 
 async function getDashboardData() {
   const [totalCriancas, totalCheckins, porTurma] = await Promise.all([
@@ -33,8 +33,8 @@ export default async function Home() {
 
   const diaAtual = diaDoEvento()
   const diasRestantes = faltamDias()
-  const inicioStr = EVENTO_INICIO.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-  const fimStr    = EVENTO_FIM.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const inicioStr = EVENTO_INICIO_LABEL
+  const fimStr    = EVENTO_FIM_LABEL
 
   return (
     <div className="space-y-6">

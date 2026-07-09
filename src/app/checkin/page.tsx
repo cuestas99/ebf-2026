@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { TURMAS, TurmaKey, DIAS } from '@/lib/turmas'
+import { TURMAS, TurmaKey } from '@/lib/turmas'
 import TurmaBadge from '@/components/TurmaBadge'
 import PulseiraBadge from '@/components/PulseiraBadge'
 import Confetti from '@/components/Confetti'
+import { useEvento } from '@/lib/useEvento'
 
 type CheckIn = { id: number; dia: number }
 type Crianca = {
@@ -23,7 +24,7 @@ function formatWhatsApp(tel: string) {
 }
 
 export default function CheckinPage() {
-  const [diaAtual, setDiaAtual] = useState(1)
+  const { evento, carregando: carregandoEvento } = useEvento()
   const [busca, setBusca] = useState('')
   const [turmaBusca, setTurmaBusca] = useState('')
   const [filtroPresenca, setFiltroPresenca] = useState<FiltroPresenca>('todos')
@@ -32,6 +33,8 @@ export default function CheckinPage() {
   const [confirmar, setConfirmar] = useState<ConfirmDialog>(null)
   const [feedback, setFeedback] = useState<{ msg: string; tipo: 'ok' | 'erro' | 'ja' } | null>(null)
   const [confetti, setConfetti] = useState(false)
+
+  const diaAtual = evento?.dia ?? 0
 
   const buscarCriancas = useCallback(async () => {
     setLoading(true)
@@ -54,13 +57,17 @@ export default function CheckinPage() {
 
   async function fazerCheckin(crianca: Crianca) {
     setConfirmar(null)
+    // O dia não é enviado: o servidor o determina e recusa fora do período.
     const res = await fetch('/api/checkin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ criancaId: crianca.id, dia: diaAtual }),
+      body: JSON.stringify({ criancaId: crianca.id }),
     })
     if (res.status === 409) {
-      setFeedback({ msg: `${crianca.nome} já fez check-in no Dia ${diaAtual}!`, tipo: 'ja' })
+      setFeedback({ msg: `${crianca.nome} já fez check-in hoje!`, tipo: 'ja' })
+    } else if (res.status === 403) {
+      const { error } = await res.json().catch(() => ({ error: '' }))
+      setFeedback({ msg: error || 'Check-in indisponível hoje.', tipo: 'erro' })
     } else if (res.ok) {
       setFeedback({ msg: `✅ ${crianca.nome} — Dia ${diaAtual} registrado!`, tipo: 'ok' })
       setConfetti(true)
@@ -69,7 +76,7 @@ export default function CheckinPage() {
     } else {
       setFeedback({ msg: 'Erro ao registrar check-in.', tipo: 'erro' })
     }
-    setTimeout(() => setFeedback(null), 3000)
+    setTimeout(() => setFeedback(null), 4000)
   }
 
   async function desfazerCheckin(crianca: Crianca) {
@@ -90,6 +97,46 @@ export default function CheckinPage() {
     return true
   })
 
+  if (carregandoEvento) {
+    return <div className="card text-center py-16 text-gray-400 font-nunito">⏳ Carregando...</div>
+  }
+
+  if (!evento?.ativo) {
+    const antes = evento!.faltamDias > 0
+    return (
+      <div className="max-w-lg mx-auto space-y-4">
+        <div>
+          <h1 className="font-fredoka text-3xl text-roxo">✅ Check-in Diário</h1>
+          <p className="text-gray-500 text-sm font-nunito">Registre a presença das crianças</p>
+        </div>
+        <div className="card text-center py-12 space-y-4">
+          <div className="text-6xl">{antes ? '🔒' : '🎊'}</div>
+          <h2 className="font-fredoka text-2xl text-roxo">
+            {antes ? 'Check-in ainda não liberado' : 'EBF 2026 encerrada'}
+          </h2>
+          <p className="font-nunito text-gray-600">
+            {antes
+              ? <>O check-in abre automaticamente no dia <strong className="text-roxo">{evento!.inicioLabel}</strong>, primeiro dia da EBF.</>
+              : <>O período de check-in foi encerrado em <strong className="text-roxo">{evento!.fimLabel}</strong>.</>}
+          </p>
+          <div className="bg-roxo-claro border-2 border-roxo/30 rounded-card p-4 inline-block">
+            <p className="font-nunito text-sm text-gray-600">
+              EBF 2026 · {evento!.inicioLabel} a {evento!.fimLabel}
+            </p>
+            {antes && (
+              <p className="font-fredoka text-roxo text-xl mt-1">
+                Faltam {evento!.faltamDias} {evento!.faltamDias === 1 ? 'dia' : 'dias'}
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 font-nunito">
+            Não é possível registrar presença antecipada ou retroativa.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <Confetti ativo={confetti} />
@@ -99,20 +146,20 @@ export default function CheckinPage() {
         <p className="text-gray-500 text-sm font-nunito">Registre a presença das crianças</p>
       </div>
 
-      {/* Seletor de dia */}
+      {/* Dia atual — definido pelo servidor, não editável */}
       <div className="card">
-        <p className="font-fredoka text-gray-500 text-sm mb-3">Dia do evento:</p>
-        <div className="flex gap-2 flex-wrap">
-          {DIAS.map(({ num, label }) => (
-            <button key={num} onClick={() => setDiaAtual(num)}
-              className={`px-4 py-2 rounded-btn font-fredoka text-sm transition-all ${
-                diaAtual === num
-                  ? 'bg-roxo text-white shadow-cartoon -translate-y-0.5'
-                  : 'bg-white border-2 border-[#d6c4a8] text-gray-600 hover:border-roxo hover:text-roxo'
-              }`}>
-              {label}
-            </button>
-          ))}
+        <div className="bg-roxo rounded-card p-4 text-white border-2 border-roxo-escuro flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="font-fredoka text-amarelo text-xl">
+              📅 Dia {evento.dia} de {evento.totalDias} · {evento.nome}
+            </p>
+            <p className="font-nunito text-white/70 text-xs mt-0.5">
+              {evento.dataHoje} · check-in liberado apenas hoje
+            </p>
+          </div>
+          <span className="bg-white/15 border border-white/30 rounded-btn px-3 py-1 font-fredoka text-xs">
+            🔒 Dia travado
+          </span>
         </div>
 
         {/* Contadores */}

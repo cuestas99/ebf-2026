@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { diaDoEvento, faltamDias, EVENTO_INICIO_LABEL, EVENTO_FIM_LABEL } from '@/lib/evento'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -20,22 +21,38 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { criancaId, dia } = await req.json()
+  const { criancaId } = await req.json()
 
-  if (!criancaId || !dia) {
-    return NextResponse.json({ error: 'criancaId e dia são obrigatórios' }, { status: 400 })
+  if (!criancaId) {
+    return NextResponse.json({ error: 'criancaId é obrigatório' }, { status: 400 })
   }
 
+  // O dia é sempre determinado pelo servidor — nunca pelo cliente.
+  // Isso impede check-in antecipado ou retroativo.
+  const hoje = diaDoEvento()
+  if (!hoje) {
+    const faltam = faltamDias()
+    const motivo = faltam > 0
+      ? `A EBF ainda não começou. O check-in abre no dia ${EVENTO_INICIO_LABEL}.`
+      : `A EBF foi encerrada em ${EVENTO_FIM_LABEL}. O check-in está fechado.`
+    return NextResponse.json({ error: motivo, foraDoEvento: true }, { status: 403 })
+  }
+
+  const dia = hoje.dia
+
   const existente = await prisma.checkIn.findUnique({
-    where: { criancaId_dia: { criancaId: Number(criancaId), dia: Number(dia) } },
+    where: { criancaId_dia: { criancaId: Number(criancaId), dia } },
   })
 
   if (existente) {
-    return NextResponse.json({ error: 'Check-in já realizado para este dia', checkin: existente }, { status: 409 })
+    return NextResponse.json(
+      { error: 'Check-in já realizado hoje', checkin: existente },
+      { status: 409 },
+    )
   }
 
   const checkin = await prisma.checkIn.create({
-    data: { criancaId: Number(criancaId), dia: Number(dia) },
+    data: { criancaId: Number(criancaId), dia },
     include: { crianca: true },
   })
 
@@ -44,6 +61,10 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const { criancaId, dia } = await req.json()
+
+  if (!criancaId || !dia) {
+    return NextResponse.json({ error: 'criancaId e dia são obrigatórios' }, { status: 400 })
+  }
 
   await prisma.checkIn.delete({
     where: { criancaId_dia: { criancaId: Number(criancaId), dia: Number(dia) } },

@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { TURMAS, TurmaKey } from '@/lib/turmas'
 import Confetti from '@/components/Confetti'
+import { useEvento } from '@/lib/useEvento'
 
 type CheckIn = { id: number; dia: number }
 type Crianca = {
@@ -15,9 +16,9 @@ type Crianca = {
 type Etapa = 'telefone' | 'selecionar' | 'sucesso'
 
 export default function EntradaPage() {
+  const { evento, carregando: carregandoEvento } = useEvento()
   const [etapa, setEtapa] = useState<Etapa>('telefone')
   const [telefone, setTelefone] = useState('')
-  const [diaAtual, setDiaAtual] = useState(1)
   const [criancas, setCriancas] = useState<Crianca[]>([])
   const [selecionadas, setSelecionadas] = useState<Set<number>>(new Set())
   const [buscando, setBuscando] = useState(false)
@@ -26,8 +27,11 @@ export default function EntradaPage() {
   const [nomesConfirmados, setNomesConfirmados] = useState<string[]>([])
   const [pulseiras, setPulseiras] = useState<{ nome: string; turma: string }[]>([])
   const [confetti, setConfetti] = useState(false)
-  const [countdown, setCountdown] = useState(5)
+  const [countdown, setCountdown] = useState(8)
+  const [erroCheckin, setErroCheckin] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const diaAtual = evento?.dia ?? 0
 
   function formatarTelefone(val: string) {
     const nums = val.replace(/\D/g, '').slice(0, 11)
@@ -69,17 +73,29 @@ export default function EntradaPage() {
 
   async function confirmarCheckin() {
     const ids = Array.from(selecionadas)
-    if (ids.length === 0) return
+    if (ids.length === 0 || !evento?.ativo) return
     setEnviando(true)
-    await Promise.all(
+    setErroCheckin('')
+
+    // O servidor decide o dia. Se ele recusar, nada é registrado.
+    const respostas = await Promise.all(
       ids.map((criancaId) =>
         fetch('/api/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ criancaId, dia: diaAtual }),
+          body: JSON.stringify({ criancaId }),
         })
       )
     )
+
+    const bloqueado = respostas.find((r) => r.status === 403)
+    if (bloqueado) {
+      const { error } = await bloqueado.json().catch(() => ({ error: '' }))
+      setErroCheckin(error || 'Check-in indisponível hoje.')
+      setEnviando(false)
+      return
+    }
+
     const confirmadas = criancas.filter((c) => selecionadas.has(c.id))
     setNomesConfirmados(confirmadas.map((c) => c.nome.split(' ')[0]))
     setPulseiras(confirmadas.map((c) => ({ nome: c.nome.split(' ')[0], turma: c.turma })))
@@ -99,7 +115,58 @@ export default function EntradaPage() {
     setSelecionadas(new Set())
     setErroNaoEncontrado(false)
     setNomesConfirmados([])
+    setErroCheckin('')
     setTimeout(() => inputRef.current?.focus(), 100)
+  }
+
+  // ── TELA 0: CARREGANDO / FORA DO PERÍODO DA EBF ───────────────
+  if (carregandoEvento) return (
+    <div className="min-h-screen bg-fundo flex items-center justify-center">
+      <p className="font-fredoka text-2xl text-gray-400">⏳ Carregando...</p>
+    </div>
+  )
+
+  if (!evento?.ativo) {
+    const antes = (evento?.faltamDias ?? 0) > 0
+    return (
+      <div className="min-h-screen bg-fundo flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md text-center space-y-6">
+          <div className="flex justify-center">
+            <Image src="/logo.png" alt="UCP Silva Jardim" width={180} height={90} className="object-contain" priority />
+          </div>
+
+          <div className="bg-white rounded-card border-2 border-[#e8d9c4] p-8 shadow-card space-y-4">
+            <div className="text-7xl">{antes ? '⏳' : '🎊'}</div>
+            <h1 className="font-fredoka text-3xl text-roxo leading-tight">
+              {antes ? 'A EBF ainda não começou' : 'A EBF 2026 foi concluída!'}
+            </h1>
+            {antes ? (
+              <>
+                <p className="font-nunito text-gray-600 text-lg">
+                  O check-in abre no dia <strong className="text-roxo">{evento?.inicioLabel}</strong>.
+                </p>
+                <div className="bg-roxo-claro border-2 border-roxo/30 rounded-card p-4">
+                  <p className="font-fredoka text-roxo text-2xl">
+                    Faltam {evento?.faltamDias} {evento?.faltamDias === 1 ? 'dia' : 'dias'}
+                  </p>
+                  <p className="font-nunito text-gray-500 text-sm mt-1">
+                    {evento?.inicioLabel} a {evento?.fimLabel} de 2026
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="font-nunito text-gray-600 text-lg">
+                Obrigado por participar! Que Deus abençoe cada criança. 🙏
+              </p>
+            )}
+          </div>
+
+          <p className="text-gray-400 text-sm font-nunito">
+            Dúvidas? Chame a recepção. 😊
+          </p>
+        </div>
+      </div>
+    )
   }
 
   // ── TELA 1: DIGITAR TELEFONE ──────────────────────────────────
@@ -120,28 +187,14 @@ export default function EntradaPage() {
           </p>
         </div>
 
-        {/* Seletor de dia */}
-        <div className="bg-white rounded-card border-2 border-[#e8d9c4] p-4 shadow-card text-left">
-          <p className="font-fredoka text-gray-500 text-sm mb-3">Qual dia é hoje?</p>
-          <div className="grid grid-cols-5 gap-2">
-            {[
-              { num: 1, label: '2ª' },
-              { num: 2, label: '3ª' },
-              { num: 3, label: '4ª' },
-              { num: 4, label: '5ª' },
-              { num: 5, label: '6ª' },
-            ].map(({ num, label }) => (
-              <button key={num} onClick={() => setDiaAtual(num)}
-                className={`py-3 rounded-btn font-fredoka text-lg transition-all ${
-                  diaAtual === num
-                    ? 'bg-roxo text-white shadow-cartoon -translate-y-0.5'
-                    : 'bg-white border-2 border-[#d6c4a8] text-gray-500 hover:border-roxo'
-                }`}>
-                {label}<br />
-                <span className="text-xs font-nunito">Dia {num}</span>
-              </button>
-            ))}
-          </div>
+        {/* Dia atual — definido pelo servidor, não editável */}
+        <div className="bg-roxo rounded-card p-4 text-white shadow-cartoon border-2 border-roxo-escuro">
+          <p className="font-fredoka text-amarelo text-2xl">
+            📅 Dia {evento.dia} · {evento.nome}
+          </p>
+          <p className="font-nunito text-white/80 text-sm mt-0.5">
+            {evento.dataHoje} — dia {evento.dia} de {evento.totalDias} da EBF
+          </p>
         </div>
 
         {/* Input telefone */}
@@ -256,6 +309,12 @@ export default function EntradaPage() {
               )
             })}
           </div>
+
+          {erroCheckin && (
+            <div className="bg-red-50 border-2 border-red-300 rounded-card p-4 text-center">
+              <p className="font-fredoka text-red-600">🚫 {erroCheckin}</p>
+            </div>
+          )}
 
           {todasJaFizeram ? (
             <div className="bg-green-50 border-2 border-green-400 rounded-card p-5 text-center">
