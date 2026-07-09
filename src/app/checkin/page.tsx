@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TURMAS, TurmaKey, DIAS } from '@/lib/turmas'
 import TurmaBadge from '@/components/TurmaBadge'
+import PulseiraBadge from '@/components/PulseiraBadge'
 import Confetti from '@/components/Confetti'
 
 type CheckIn = { id: number; dia: number }
@@ -276,9 +277,11 @@ export default function CheckinPage() {
           <div className="bg-fundo rounded-card shadow-2xl border-2 border-[#e8d9c4] max-w-sm w-full p-6 space-y-4">
             <h2 className="font-fredoka text-roxo text-xl">Confirmar Check-in</h2>
 
+            <PulseiraBadge turma={confirmar.crianca.turma} tamanho="lg" />
+
             <div className="bg-white rounded-card p-4 space-y-2 border border-[#e8d9c4]">
               <p className="font-nunito text-sm"><span className="font-bold">Criança:</span> {confirmar.crianca.nome}</p>
-              <TurmaBadge turma={confirmar.crianca.turma} />
+              <TurmaBadge turma={confirmar.crianca.turma} comPulseira={false} />
               <p className="font-nunito text-sm"><span className="font-bold">Pai/Resp.:</span> {confirmar.crianca.nomePai}</p>
               <p className="font-nunito text-sm"><span className="font-bold">Mãe/Resp.:</span> {confirmar.crianca.nomeMae}</p>
               <p className="font-nunito text-sm">

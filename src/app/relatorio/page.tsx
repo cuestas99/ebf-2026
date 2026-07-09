@@ -4,7 +4,7 @@ import { TURMAS, TurmaKey } from '@/lib/turmas'
 import TurmaBadge from '@/components/TurmaBadge'
 
 type TurmaRelatorio = {
-  turma: string; label: string; emoji: string
+  turma: string; label: string; emoji: string; pulseira: string
   total: number; totalDias: number; percentual: number
   porDia: { dia: number; presentes: number }[]
 }
@@ -16,6 +16,7 @@ type CriancaTabela = {
   comoSoube: string | null; pertenceIgreja: boolean; qualIgreja: string | null
   restricaoAlimentar: boolean; qualRestricao: string | null
   diasPresente: number[]; totalDias: number
+  pulseira: string
 }
 type IdadeRelatorio = { idade: number; total: number; percentual: number }
 type RelatorioData = {
@@ -31,16 +32,24 @@ function CardTurmas({ porTurma, totalCriancas }: { porTurma: TurmaRelatorio[]; t
   const maior = porTurma.reduce((a, b) => a.total >= b.total ? a : b, porTurma[0])
   return (
     <div className="card">
-      <h2 className="font-fredoka text-roxo text-xl mb-4">👥 Inscritos por Turma</h2>
+      <h2 className="font-fredoka text-roxo text-xl mb-1">👥 Inscritos por Turma</h2>
+      <p className="text-gray-400 text-xs font-nunito mb-4">Quantidade de pulseiras a separar por cor</p>
       <div className="space-y-3">
         {porTurma.map((t) => {
           const info = TURMAS[t.turma as TurmaKey]
           const pct = (t.total / maximo) * 100
           return (
             <div key={t.turma} className="flex items-center gap-3">
-              <span className="text-xl w-7 shrink-0">{t.emoji}</span>
-              <span className="w-36 text-sm font-bold text-gray-600 font-nunito truncate shrink-0">
-                {t.label.split(' (')[0]}
+              <span
+                className="w-6 h-6 rounded-full border-2 border-white shadow-sm shrink-0"
+                style={{ backgroundColor: info?.hex }}
+                title={`Pulseira ${t.pulseira}`}
+              />
+              <span className="w-40 text-sm font-bold text-gray-600 font-nunito truncate shrink-0">
+                {t.emoji} {t.label.split(' (')[0]}
+                <span className="block text-xs font-normal" style={{ color: info?.hex }}>
+                  Pulseira {t.pulseira}
+                </span>
               </span>
               <div className="flex-1 bg-[#f0e6d6] rounded-full h-7 overflow-hidden border border-[#e0d0bc]">
                 <div
@@ -56,7 +65,7 @@ function CardTurmas({ porTurma, totalCriancas }: { porTurma: TurmaRelatorio[]; t
           )
         })}
       </div>
-      <div className="mt-4 pt-4 border-t border-[#f0e6d6] flex items-center justify-between text-sm font-nunito text-gray-500">
+      <div className="mt-4 pt-4 border-t border-[#f0e6d6] flex items-center justify-between text-sm font-nunito text-gray-500 flex-wrap gap-2">
         <span>Total inscrito: <strong className="text-roxo font-fredoka text-lg">{totalCriancas}</strong> crianças</span>
         <span>Maior turma: <strong className="text-gray-700">{maior?.label.split(' (')[0] ?? '—'}</strong></span>
       </div>
@@ -83,7 +92,7 @@ export default function RelatorioPage() {
     const { utils, writeFile } = await import('xlsx')
     if (!data) return
     const linhas = data.tabela.map((c) => ({
-      'Nome': c.nome, 'Idade': c.idade, 'Turma': c.turmaLabel,
+      'Nome': c.nome, 'Idade': c.idade, 'Turma': c.turmaLabel, 'Pulseira': c.pulseira,
       'Rua': c.rua, 'Número': c.numero, 'Complemento': c.complemento || '',
       'Bairro': c.bairro, 'Cidade': c.cidade,
       'Pai/Responsável': c.nomePai, 'Mãe/Responsável': c.nomeMae,
@@ -102,7 +111,7 @@ export default function RelatorioPage() {
     const wb = utils.book_new()
     utils.book_append_sheet(wb, ws, 'Frequência')
     const resumo = data.porTurma.map((t) => ({
-      'Turma': t.label, 'Total de Crianças': t.total,
+      'Turma': t.label, 'Pulseira': t.pulseira, 'Total de Crianças': t.total,
       'Total Check-ins': t.totalDias, 'Frequência (%)': `${t.percentual}%`,
     }))
     utils.book_append_sheet(wb, utils.json_to_sheet(resumo), 'Por Turma')

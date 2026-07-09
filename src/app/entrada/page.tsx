@@ -24,6 +24,7 @@ export default function EntradaPage() {
   const [enviando, setEnviando] = useState(false)
   const [erroNaoEncontrado, setErroNaoEncontrado] = useState(false)
   const [nomesConfirmados, setNomesConfirmados] = useState<string[]>([])
+  const [pulseiras, setPulseiras] = useState<{ nome: string; turma: string }[]>([])
   const [confetti, setConfetti] = useState(false)
   const [countdown, setCountdown] = useState(5)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -79,15 +80,16 @@ export default function EntradaPage() {
         })
       )
     )
-    const nomes = criancas.filter((c) => selecionadas.has(c.id)).map((c) => c.nome.split(' ')[0])
-    setNomesConfirmados(nomes)
+    const confirmadas = criancas.filter((c) => selecionadas.has(c.id))
+    setNomesConfirmados(confirmadas.map((c) => c.nome.split(' ')[0]))
+    setPulseiras(confirmadas.map((c) => ({ nome: c.nome.split(' ')[0], turma: c.turma })))
     setEnviando(false)
     setConfetti(true)
     setEtapa('sucesso')
     setTimeout(() => setConfetti(false), 3000)
-    setCountdown(5)
+    setCountdown(8)
     const intervalo = setInterval(() => setCountdown((n) => n - 1), 1000)
-    setTimeout(() => { clearInterval(intervalo); reiniciar() }, 5000)
+    setTimeout(() => { clearInterval(intervalo); reiniciar() }, 8000)
   }
 
   function reiniciar() {
@@ -296,6 +298,27 @@ export default function EntradaPage() {
           </p>
         </div>
 
+        {/* Pulseiras a retirar */}
+        <div className="bg-white rounded-card border-2 border-[#e8d9c4] p-5 shadow-card space-y-3">
+          <p className="font-fredoka text-roxo text-lg">🎗️ Retire a pulseira na recepção:</p>
+          {pulseiras.map(({ nome, turma }) => {
+            const t = TURMAS[turma as TurmaKey]
+            return (
+              <div key={nome} className="flex items-center gap-3 rounded-card border-2 p-3"
+                style={{ backgroundColor: `${t?.hex}1a`, borderColor: t?.hex }}>
+                <div className="w-10 h-10 rounded-full border-4 border-white shadow-md shrink-0"
+                  style={{ backgroundColor: t?.hex }} />
+                <div className="text-left">
+                  <p className="font-fredoka text-gray-800 text-lg leading-tight">{nome}</p>
+                  <p className="font-nunito text-sm" style={{ color: t?.hex }}>
+                    Pulseira <strong>{t?.pulseira}</strong>
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
         <div className="bg-roxo rounded-card p-6 text-white shadow-cartoon border-2 border-roxo-escuro">
           <p className="font-fredoka text-2xl">Obrigado! 🙏</p>
           <p className="font-nunito text-white/80 mt-1">Aproveite a EBF 2026!</p>
@@ -305,7 +328,7 @@ export default function EntradaPage() {
           <div className="w-full bg-[#e8d9c4] rounded-full h-3 overflow-hidden border border-[#d6c4a8]">
             <div
               className="h-full bg-roxo rounded-full transition-all duration-1000"
-              style={{ width: `${(countdown / 5) * 100}%` }}
+              style={{ width: `${(countdown / 8) * 100}%` }}
             />
           </div>
           <p className="text-gray-400 font-nunito text-sm">

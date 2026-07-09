@@ -279,10 +279,17 @@ export default function CadastroPage() {
           )}
 
           {turmaCalculada && (
-            <div className={`rounded-card p-3 flex items-center gap-2 border-2 ${TURMAS[turmaCalculada as TurmaKey].borda} ${TURMAS[turmaCalculada as TurmaKey].corClaro}`}>
+            <div className={`rounded-card p-3 flex items-center gap-3 flex-wrap border-2 ${TURMAS[turmaCalculada as TurmaKey].borda} ${TURMAS[turmaCalculada as TurmaKey].corClaro}`}>
               <span className="text-lg">{TURMAS[turmaCalculada as TurmaKey].emoji}</span>
               <span className={`font-fredoka ${TURMAS[turmaCalculada as TurmaKey].texto}`}>
                 Turma: {TURMAS[turmaCalculada as TurmaKey].label}
+              </span>
+              <span className="ml-auto flex items-center gap-2 shrink-0">
+                <span className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: TURMAS[turmaCalculada as TurmaKey].hex }} />
+                <span className={`font-fredoka text-sm ${TURMAS[turmaCalculada as TurmaKey].texto}`}>
+                  Pulseira {TURMAS[turmaCalculada as TurmaKey].pulseira}
+                </span>
               </span>
             </div>
           )}

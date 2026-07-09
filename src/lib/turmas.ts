@@ -1,8 +1,28 @@
 export const TURMAS = {
-  BEBES:            { label: 'Bebês/Maternal (2-4 anos)', cor: 'bg-pink-500',   corClaro: 'bg-pink-100',   texto: 'text-pink-700',   borda: 'border-pink-500',   emoji: '👶', hex: '#ec4899' },
-  JARDIM:           { label: 'Jardim (5-6 anos)',         cor: 'bg-green-500',  corClaro: 'bg-green-100',  texto: 'text-green-700',  borda: 'border-green-500',  emoji: '🌱', hex: '#22c55e' },
-  JUNIORES:         { label: 'Juniores (7-9 anos)',       cor: 'bg-blue-500',   corClaro: 'bg-blue-100',   texto: 'text-blue-700',   borda: 'border-blue-500',   emoji: '⭐', hex: '#3b82f6' },
-  PRE_ADOLESCENTES: { label: 'Pré-Adolescentes (10-12)', cor: 'bg-purple-500', corClaro: 'bg-purple-100', texto: 'text-purple-700', borda: 'border-purple-500', emoji: '🚀', hex: '#a855f7' },
+  BEBES: {
+    label: 'Bebês/Maternal (2-4 anos)',
+    pulseira: 'Amarela', pulseiraEmoji: '🟡',
+    cor: 'bg-amber-400', corClaro: 'bg-amber-100', texto: 'text-amber-800', borda: 'border-amber-400',
+    emoji: '👶', hex: '#F5C518',
+  },
+  JARDIM: {
+    label: 'Jardim (5-6 anos)',
+    pulseira: 'Verde', pulseiraEmoji: '🟢',
+    cor: 'bg-green-500', corClaro: 'bg-green-100', texto: 'text-green-700', borda: 'border-green-500',
+    emoji: '🌱', hex: '#22c55e',
+  },
+  JUNIORES: {
+    label: 'Juniores (7-8 anos)',
+    pulseira: 'Azul', pulseiraEmoji: '🔵',
+    cor: 'bg-blue-500', corClaro: 'bg-blue-100', texto: 'text-blue-700', borda: 'border-blue-500',
+    emoji: '⭐', hex: '#3b82f6',
+  },
+  PRE_ADOLESCENTES: {
+    label: 'Pré-Adolescentes (9-12 anos)',
+    pulseira: 'Roxa', pulseiraEmoji: '🟣',
+    cor: 'bg-purple-500', corClaro: 'bg-purple-100', texto: 'text-purple-700', borda: 'border-purple-500',
+    emoji: '🚀', hex: '#8B3FBE',
+  },
 }
 
 export type TurmaKey = keyof typeof TURMAS
@@ -10,8 +30,13 @@ export type TurmaKey = keyof typeof TURMAS
 export function turmaParaIdade(idade: number): string {
   if (idade <= 4) return 'BEBES'
   if (idade <= 6) return 'JARDIM'
-  if (idade <= 9) return 'JUNIORES'
+  if (idade <= 8) return 'JUNIORES'
   return 'PRE_ADOLESCENTES'
+}
+
+export function pulseiraDaTurma(turma: string) {
+  const t = TURMAS[turma as TurmaKey]
+  return t ? { nome: t.pulseira, emoji: t.pulseiraEmoji, hex: t.hex } : null
 }
 
 export const DIAS = [
