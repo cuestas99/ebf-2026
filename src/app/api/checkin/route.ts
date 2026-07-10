@@ -70,40 +70,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(checkin, { status: 201 })
 }
 
-/** Marca (ou desmarca) a entrega da pulseira. */
-export async function PATCH(req: NextRequest) {
-  if (!(await getSession())) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
-
-  const body = await req.json()
-  const criancaId = Number(body.criancaId)
-  if (!criancaId) {
-    return NextResponse.json({ error: 'criancaId é obrigatório' }, { status: 400 })
-  }
-
-  const dia = diaValido(body.dia) ?? diaDoEvento()?.dia ?? null
-  if (!dia) {
-    return NextResponse.json({ error: 'Informe o dia do evento (1 a 5).' }, { status: 400 })
-  }
-
-  const entregar = body.entregue !== false
-
-  const checkin = await prisma.checkIn.update({
-    where: { criancaId_dia: { criancaId, dia } },
-    data: {
-      pulseiraEntregue: entregar,
-      pulseiraEntregueEm: entregar ? new Date() : null,
-    },
-  }).catch(() => null)
-
-  if (!checkin) {
-    return NextResponse.json({ error: `Check-in não encontrado no dia ${dia}` }, { status: 404 })
-  }
-
-  return NextResponse.json(checkin)
-}
-
 export async function DELETE(req: NextRequest) {
   if (!(await getSession())) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })

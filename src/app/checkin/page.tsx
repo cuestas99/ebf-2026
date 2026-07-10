@@ -6,7 +6,7 @@ import PulseiraBadge from '@/components/PulseiraBadge'
 import Confetti from '@/components/Confetti'
 import { useEvento } from '@/lib/useEvento'
 
-type CheckIn = { id: number; dia: number; pulseiraEntregue: boolean }
+type CheckIn = { id: number; dia: number }
 type Crianca = {
   id: number; nome: string; idade: number; turma: string
   nomePai: string; nomeMae: string; whatsapp: string
@@ -16,7 +16,7 @@ type Crianca = {
   checkins: CheckIn[]
 }
 
-type FiltroPresenca = 'todos' | 'presentes' | 'ausentes' | 'sempulseira'
+type FiltroPresenca = 'todos' | 'presentes' | 'ausentes'
 type ConfirmDialog = { crianca: Crianca } | null
 
 function formatWhatsApp(tel: string) {
@@ -30,7 +30,6 @@ export default function CheckinPage() {
   const [turmaBusca, setTurmaBusca] = useState('')
   const [filtroPresenca, setFiltroPresenca] = useState<FiltroPresenca>('todos')
   const [criancas, setCriancas] = useState<Crianca[]>([])
-  const [todas, setTodas] = useState<Crianca[]>([])
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [confirmar, setConfirmar] = useState<ConfirmDialog>(null)
@@ -40,13 +39,6 @@ export default function CheckinPage() {
   // Por padrão o dia de hoje; a recepção pode trocar para corrigir lançamentos.
   const diaAtual = diaSelecionado ?? evento?.dia ?? 1
   const ehHoje = evento?.ativo === true && diaAtual === evento.dia
-
-  // Lista sem filtro — o painel de pulseiras pendentes não deve
-  // depender da busca que a recepção estiver digitando.
-  const carregarTodas = useCallback(async () => {
-    const res = await fetch('/api/criancas', { cache: 'no-store' }).catch(() => null)
-    if (res?.ok) setTodas(await res.json().catch(() => []))
-  }, [])
 
   const buscarCriancas = useCallback(async () => {
     setLoading(true)
@@ -66,45 +58,15 @@ export default function CheckinPage() {
     }
   }, [busca, turmaBusca])
 
-  const recarregar = useCallback(() => {
-    buscarCriancas()
-    carregarTodas()
-  }, [buscarCriancas, carregarTodas])
+  const recarregar = buscarCriancas
 
   useEffect(() => {
     const t = setTimeout(buscarCriancas, 300)
     return () => clearTimeout(t)
   }, [buscarCriancas])
 
-  useEffect(() => { carregarTodas() }, [carregarTodas])
-
   function temCheckin(crianca: Crianca, dia: number) {
     return crianca.checkins.some((c) => c.dia === dia)
-  }
-
-  function pulseiraPendente(crianca: Crianca) {
-    const doDia = crianca.checkins.find((c) => c.dia === diaAtual)
-    return doDia !== undefined && !doDia.pulseiraEntregue
-  }
-
-  async function marcarPulseira(crianca: Crianca, entregue: boolean) {
-    const res = await fetch('/api/checkin', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ criancaId: crianca.id, dia: diaAtual, entregue }),
-    })
-    if (res.ok) {
-      setFeedback({
-        msg: entregue
-          ? `🎗️ Pulseira entregue para ${crianca.nome.split(' ')[0]}`
-          : `↩️ Entrega desfeita para ${crianca.nome.split(' ')[0]}`,
-        tipo: 'ok',
-      })
-      recarregar()
-    } else {
-      setFeedback({ msg: 'Erro ao registrar entrega da pulseira.', tipo: 'erro' })
-    }
-    setTimeout(() => setFeedback(null), 3000)
   }
 
   async function fazerCheckin(crianca: Crianca) {
@@ -139,16 +101,9 @@ export default function CheckinPage() {
   const presentes = criancas.filter((c) => temCheckin(c, diaAtual)).length
   const ausentes  = criancas.length - presentes
 
-  // Sempre sobre a lista completa, independente do filtro de busca
-  const pendentes = todas
-    .filter(pulseiraPendente)
-    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-  const presentesHoje = todas.filter((c) => temCheckin(c, diaAtual)).length
-
   const listaFiltrada = criancas.filter((c) => {
-    if (filtroPresenca === 'presentes')   return temCheckin(c, diaAtual)
-    if (filtroPresenca === 'ausentes')    return !temCheckin(c, diaAtual)
-    if (filtroPresenca === 'sempulseira') return pulseiraPendente(c)
+    if (filtroPresenca === 'presentes') return temCheckin(c, diaAtual)
+    if (filtroPresenca === 'ausentes')  return !temCheckin(c, diaAtual)
     return true
   })
 
@@ -216,50 +171,6 @@ export default function CheckinPage() {
         </div>
       </div>
 
-      {/* Pulseiras pendentes de entrega */}
-      {pendentes.length > 0 ? (
-        <div className="card border-2 border-amarelo bg-amarelo-claro">
-          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-            <h2 className="font-fredoka text-gray-900 text-lg">
-              🎗️ Pulseiras a entregar ({pendentes.length})
-            </h2>
-            <p className="text-xs text-gray-600 font-nunito">
-              Fizeram check-in no Dia {diaAtual} e ainda não retiraram
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            {pendentes.map((c) => {
-              const t = TURMAS[c.turma as TurmaKey]
-              return (
-                <div key={c.id}
-                  className="bg-white rounded-card border-2 p-3 flex items-center gap-3 flex-wrap"
-                  style={{ borderColor: t?.hex }}>
-                  <div className="w-10 h-10 rounded-full border-4 border-white shrink-0"
-                    style={{ backgroundColor: t?.hex, boxShadow: `0 0 0 2px ${t?.hex}` }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-fredoka text-gray-800 truncate">{c.nome}</p>
-                    <p className="font-fredoka text-sm" style={{ color: t?.hex }}>
-                      Pulseira {t?.pulseira}
-                    </p>
-                  </div>
-                  <button onClick={() => marcarPulseira(c, true)}
-                    className="btn-success text-sm px-4 py-2 shrink-0">
-                    ✅ Entreguei
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ) : presentesHoje > 0 && (
-        <div className="card border-2 border-green-400 bg-green-50 text-center py-3">
-          <p className="font-fredoka text-green-700">
-            🎗️ Todas as {presentesHoje} pulseiras do Dia {diaAtual} foram entregues!
-          </p>
-        </div>
-      )}
-
       {/* Feedback */}
       {feedback && (
         <div className={`rounded-card p-4 font-fredoka text-center text-sm border-2 ${
@@ -287,10 +198,9 @@ export default function CheckinPage() {
         {/* Tabs presença */}
         <div className="flex gap-2 flex-wrap">
           {([
-            { valor: 'todos',      label: `Todos (${criancas.length})` },
-            { valor: 'presentes',  label: `✅ Presentes (${presentes})` },
-            { valor: 'ausentes',   label: `❌ Ausentes (${ausentes})` },
-            { valor: 'sempulseira', label: `🎗️ Sem pulseira (${criancas.filter(pulseiraPendente).length})` },
+            { valor: 'todos',     label: `Todos (${criancas.length})` },
+            { valor: 'presentes', label: `✅ Presentes (${presentes})` },
+            { valor: 'ausentes',  label: `❌ Ausentes (${ausentes})` },
           ] as { valor: FiltroPresenca; label: string }[]).map(({ valor, label }) => (
             <button key={valor} onClick={() => setFiltroPresenca(valor)}
               className={`px-3 py-1.5 rounded-btn font-fredoka text-xs transition-all ${
@@ -342,12 +252,10 @@ export default function CheckinPage() {
 
         {!loading && !erro && listaFiltrada.map((crianca) => {
           const jaFez = temCheckin(crianca, diaAtual)
-          const semPulseira = pulseiraPendente(crianca)
           const temRestricao = crianca.restricaoAlimentar
           return (
             <div key={crianca.id}
               className={`card flex items-center gap-4 py-3 px-4 transition-all ${
-                semPulseira  ? 'border-2 border-amarelo-escuro bg-amarelo-claro' :
                 jaFez        ? 'border-2 border-green-400 bg-green-50' :
                 temRestricao ? 'border-2 border-amarelo bg-amarelo-claro' : ''
               }`}>
@@ -365,11 +273,6 @@ export default function CheckinPage() {
                   {jaFez && (
                     <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full font-nunito">
                       ✅ Presente
-                    </span>
-                  )}
-                  {semPulseira && (
-                    <span className="bg-amarelo-escuro text-white text-xs font-bold px-2 py-0.5 rounded-full font-nunito">
-                      🎗️ Pulseira pendente
                     </span>
                   )}
                 </div>
@@ -396,30 +299,12 @@ export default function CheckinPage() {
                 </div>
               </div>
 
-              <div className="shrink-0 flex flex-col gap-1.5 items-stretch">
-                {semPulseira ? (
-                  <>
-                    <button onClick={() => marcarPulseira(crianca, true)}
-                      className="btn-success text-xs px-3 py-2 whitespace-nowrap">
-                      🎗️ Entreguei
-                    </button>
-                    <button onClick={() => desfazerCheckin(crianca)}
-                      className="px-3 py-1 rounded-btn text-xs font-bold font-nunito bg-white border-2 border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500 transition-all">
-                      Desfazer
-                    </button>
-                  </>
-                ) : jaFez ? (
-                  <>
-                    <button onClick={() => marcarPulseira(crianca, false)}
-                      className="px-3 py-1 rounded-btn text-xs font-bold font-nunito bg-white border-2 border-gray-300 text-gray-500 hover:border-amarelo-escuro hover:text-amarelo-escuro transition-all whitespace-nowrap"
-                      title="Marcar pulseira como não entregue">
-                      ↩️ Pulseira
-                    </button>
-                    <button onClick={() => desfazerCheckin(crianca)}
-                      className="px-3 py-1 rounded-btn text-xs font-bold font-nunito bg-white border-2 border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500 transition-all">
-                      Desfazer
-                    </button>
-                  </>
+              <div className="shrink-0">
+                {jaFez ? (
+                  <button onClick={() => desfazerCheckin(crianca)}
+                    className="px-3 py-1.5 rounded-btn text-xs font-bold font-nunito bg-white border-2 border-gray-300 text-gray-500 hover:border-red-400 hover:text-red-500 transition-all">
+                    Desfazer
+                  </button>
                 ) : (
                   <button onClick={() => setConfirmar({ crianca })}
                     className={`px-4 py-2 rounded-btn font-fredoka text-sm -translate-y-0.5 transition-all ${
