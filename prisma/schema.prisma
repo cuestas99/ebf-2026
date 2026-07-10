@@ -52,6 +52,11 @@ model CheckIn {
   id         Int      @id @default(autoincrement())
   criancaId  Int
   dia        Int
+
+  // Entrega da pulseira colorida da turma, na recepção
+  pulseiraEntregue   Boolean   @default(false)
+  pulseiraEntregueEm DateTime?
+
   criadoEm  DateTime @default(now())
   crianca    Crianca  @relation(fields: [criancaId], references: [id], onDelete: Cascade)
 

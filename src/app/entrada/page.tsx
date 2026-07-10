@@ -27,7 +27,7 @@ export default function EntradaPage() {
   const [nomesConfirmados, setNomesConfirmados] = useState<string[]>([])
   const [pulseiras, setPulseiras] = useState<{ nome: string; turma: string }[]>([])
   const [confetti, setConfetti] = useState(false)
-  const [countdown, setCountdown] = useState(8)
+  const [countdown, setCountdown] = useState(12)
   const [erroCheckin, setErroCheckin] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -103,9 +103,9 @@ export default function EntradaPage() {
     setConfetti(true)
     setEtapa('sucesso')
     setTimeout(() => setConfetti(false), 3000)
-    setCountdown(8)
+    setCountdown(12)
     const intervalo = setInterval(() => setCountdown((n) => n - 1), 1000)
-    setTimeout(() => { clearInterval(intervalo); reiniciar() }, 8000)
+    setTimeout(() => { clearInterval(intervalo); reiniciar() }, 12000)
   }
 
   function reiniciar() {
@@ -345,49 +345,56 @@ export default function EntradaPage() {
     <div className="min-h-screen bg-fundo flex flex-col items-center justify-center px-4 py-12">
       <Confetti ativo={confetti} />
 
-      <div className="w-full max-w-md text-center space-y-6">
-        <div className="text-8xl animate-bounce">🎊</div>
+      <div className="w-full max-w-lg text-center space-y-5">
+        <div className="text-6xl animate-bounce">🎊</div>
 
         <div>
-          <h1 className="font-fredoka text-4xl text-roxo">Check-in feito!</h1>
-          <p className="font-nunito text-gray-600 mt-3 text-lg">
+          <h1 className="font-fredoka text-3xl text-roxo">Check-in feito!</h1>
+          <p className="font-nunito text-gray-600 mt-1">
             {nomesConfirmados.length === 1
-              ? `${nomesConfirmados[0]} está registrado(a) no Dia ${diaAtual}!`
-              : `${nomesConfirmados.join(' e ')} estão registrados no Dia ${diaAtual}!`}
+              ? `${nomesConfirmados[0]} está registrado(a) no Dia ${diaAtual}.`
+              : `${nomesConfirmados.join(' e ')} estão registrados no Dia ${diaAtual}.`}
           </p>
         </div>
 
-        {/* Pulseiras a retirar */}
-        <div className="bg-white rounded-card border-2 border-[#e8d9c4] p-5 shadow-card space-y-3">
-          <p className="font-fredoka text-roxo text-lg">🎗️ Retire a pulseira na recepção:</p>
-          {pulseiras.map(({ nome, turma }) => {
+        {/* Instrução principal: retirar a pulseira */}
+        <div className="bg-amarelo rounded-card p-5 border-2 border-amarelo-escuro shadow-cartoon-amarelo">
+          <p className="font-fredoka text-gray-900 text-2xl leading-tight">
+            👉 Vá até a RECEPÇÃO
+          </p>
+          <p className="font-fredoka text-gray-800 text-lg mt-1">
+            e retire {pulseiras.length === 1 ? 'a pulseira' : 'as pulseiras'}:
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {pulseiras.map(({ nome, turma }, i) => {
             const t = TURMAS[turma as TurmaKey]
             return (
-              <div key={nome} className="flex items-center gap-3 rounded-card border-2 p-3"
-                style={{ backgroundColor: `${t?.hex}1a`, borderColor: t?.hex }}>
-                <div className="w-10 h-10 rounded-full border-4 border-white shadow-md shrink-0"
-                  style={{ backgroundColor: t?.hex }} />
-                <div className="text-left">
-                  <p className="font-fredoka text-gray-800 text-lg leading-tight">{nome}</p>
-                  <p className="font-nunito text-sm" style={{ color: t?.hex }}>
-                    Pulseira <strong>{t?.pulseira}</strong>
+              <div key={`${nome}-${i}`}
+                className="flex items-center gap-4 rounded-card border-4 p-4 bg-white shadow-card"
+                style={{ borderColor: t?.hex }}>
+                <div
+                  className="w-16 h-16 rounded-full border-4 border-white shadow-lg shrink-0 ring-2"
+                  style={{ backgroundColor: t?.hex, boxShadow: `0 0 0 3px ${t?.hex}` }}
+                />
+                <div className="text-left min-w-0">
+                  <p className="font-fredoka text-gray-800 text-xl leading-tight truncate">{nome}</p>
+                  <p className="font-fredoka text-2xl leading-tight" style={{ color: t?.hex }}>
+                    Pulseira {t?.pulseira}
                   </p>
+                  <p className="font-nunito text-xs text-gray-400">{t?.label.split(' (')[0]}</p>
                 </div>
               </div>
             )
           })}
         </div>
 
-        <div className="bg-roxo rounded-card p-6 text-white shadow-cartoon border-2 border-roxo-escuro">
-          <p className="font-fredoka text-2xl">Obrigado! 🙏</p>
-          <p className="font-nunito text-white/80 mt-1">Aproveite a EBF 2026!</p>
-        </div>
-
         <div className="space-y-2">
           <div className="w-full bg-[#e8d9c4] rounded-full h-3 overflow-hidden border border-[#d6c4a8]">
             <div
               className="h-full bg-roxo rounded-full transition-all duration-1000"
-              style={{ width: `${(countdown / 8) * 100}%` }}
+              style={{ width: `${(countdown / 12) * 100}%` }}
             />
           </div>
           <p className="text-gray-400 font-nunito text-sm">
@@ -397,8 +404,8 @@ export default function EntradaPage() {
 
         <button
           onClick={reiniciar}
-          className="btn-primary w-full py-5 text-xl">
-          🏠 Fazer check-in de outra família
+          className="btn-secondary w-full py-4 text-lg">
+          🏠 Próxima família
         </button>
       </div>
     </div>

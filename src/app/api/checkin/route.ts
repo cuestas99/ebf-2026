@@ -59,6 +59,36 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(checkin, { status: 201 })
 }
 
+/** Marca (ou desmarca) a entrega da pulseira do dia de hoje. */
+export async function PATCH(req: NextRequest) {
+  const { criancaId, entregue } = await req.json()
+
+  if (!criancaId) {
+    return NextResponse.json({ error: 'criancaId é obrigatório' }, { status: 400 })
+  }
+
+  const hoje = diaDoEvento()
+  if (!hoje) {
+    return NextResponse.json({ error: 'Fora do período da EBF', foraDoEvento: true }, { status: 403 })
+  }
+
+  const entregar = entregue !== false
+
+  const checkin = await prisma.checkIn.update({
+    where: { criancaId_dia: { criancaId: Number(criancaId), dia: hoje.dia } },
+    data: {
+      pulseiraEntregue: entregar,
+      pulseiraEntregueEm: entregar ? new Date() : null,
+    },
+  }).catch(() => null)
+
+  if (!checkin) {
+    return NextResponse.json({ error: 'Check-in não encontrado para hoje' }, { status: 404 })
+  }
+
+  return NextResponse.json(checkin)
+}
+
 export async function DELETE(req: NextRequest) {
   const { criancaId, dia } = await req.json()
 
