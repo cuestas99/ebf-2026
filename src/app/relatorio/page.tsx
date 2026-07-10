@@ -79,11 +79,19 @@ export default function RelatorioPage() {
   const [turmaBusca, setTurmaBusca] = useState('')
   const [abaAtiva, setAbaAtiva] = useState<'resumo' | 'tabela' | 'certificados'>('resumo')
 
+  const [erro, setErro] = useState('')
+
   function carregarDados() {
     setLoading(true)
+    setErro('')
     fetch('/api/relatorio', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false) })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Servidor respondeu ${r.status}`)
+        return r.json()
+      })
+      .then((d) => setData(d))
+      .catch((e) => setErro(e.message || 'Falha ao carregar o relatório'))
+      .finally(() => setLoading(false))
   }
 
   useEffect(() => { carregarDados() }, [])
@@ -125,7 +133,17 @@ export default function RelatorioPage() {
       <div className="card text-center py-16 text-gray-400 font-nunito">⏳ Carregando relatório...</div>
     )
   }
-  if (!data) return null
+
+  if (erro || !data) {
+    return (
+      <div className="card text-center py-12 space-y-3 border-2 border-red-300 bg-red-50">
+        <div className="text-5xl">⚠️</div>
+        <h2 className="font-fredoka text-xl text-red-700">Não foi possível carregar o relatório</h2>
+        <p className="font-nunito text-sm text-gray-600">{erro || 'Resposta vazia do servidor.'}</p>
+        <button onClick={carregarDados} className="btn-primary text-sm px-4 py-2">🔄 Tentar novamente</button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

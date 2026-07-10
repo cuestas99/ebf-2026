@@ -32,6 +32,7 @@ export default function CheckinPage() {
   const [criancas, setCriancas] = useState<Crianca[]>([])
   const [todas, setTodas] = useState<Crianca[]>([])
   const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState('')
   const [confirmar, setConfirmar] = useState<ConfirmDialog>(null)
   const [feedback, setFeedback] = useState<{ msg: string; tipo: 'ok' | 'erro' | 'ja' } | null>(null)
   const [confetti, setConfetti] = useState(false)
@@ -43,18 +44,26 @@ export default function CheckinPage() {
   // Lista sem filtro — o painel de pulseiras pendentes não deve
   // depender da busca que a recepção estiver digitando.
   const carregarTodas = useCallback(async () => {
-    const res = await fetch('/api/criancas', { cache: 'no-store' })
-    if (res.ok) setTodas(await res.json())
+    const res = await fetch('/api/criancas', { cache: 'no-store' }).catch(() => null)
+    if (res?.ok) setTodas(await res.json().catch(() => []))
   }, [])
 
   const buscarCriancas = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams()
-    if (busca) params.set('busca', busca)
-    if (turmaBusca) params.set('turma', turmaBusca)
-    const res = await fetch(`/api/criancas?${params}`, { cache: 'no-store' })
-    setCriancas(await res.json())
-    setLoading(false)
+    setErro('')
+    try {
+      const params = new URLSearchParams()
+      if (busca) params.set('busca', busca)
+      if (turmaBusca) params.set('turma', turmaBusca)
+      const res = await fetch(`/api/criancas?${params}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Servidor respondeu ${res.status}`)
+      setCriancas(await res.json())
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Falha ao carregar as crianças')
+      setCriancas([])
+    } finally {
+      setLoading(false)
+    }
   }, [busca, turmaBusca])
 
   const recarregar = useCallback(() => {
@@ -301,7 +310,16 @@ export default function CheckinPage() {
           <div className="card text-center py-10 text-gray-400 font-nunito">⏳ Carregando...</div>
         )}
 
-        {!loading && listaFiltrada.length === 0 && (
+        {!loading && erro && (
+          <div className="card text-center py-12 space-y-3 border-2 border-red-300 bg-red-50">
+            <div className="text-5xl">⚠️</div>
+            <h2 className="font-fredoka text-xl text-red-700">Não foi possível carregar as crianças</h2>
+            <p className="font-nunito text-sm text-gray-600">{erro}</p>
+            <button onClick={recarregar} className="btn-primary text-sm px-4 py-2">🔄 Tentar novamente</button>
+          </div>
+        )}
+
+        {!loading && !erro && listaFiltrada.length === 0 && (
           <div className="card text-center py-12">
             {filtroPresenca === 'ausentes' && ausentes === 0 ? (
               <>
@@ -322,7 +340,7 @@ export default function CheckinPage() {
           </div>
         )}
 
-        {!loading && listaFiltrada.map((crianca) => {
+        {!loading && !erro && listaFiltrada.map((crianca) => {
           const jaFez = temCheckin(crianca, diaAtual)
           const semPulseira = pulseiraPendente(crianca)
           const temRestricao = crianca.restricaoAlimentar

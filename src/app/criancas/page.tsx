@@ -24,19 +24,28 @@ export default function CriancasPage() {
   const [confirmarExcluir, setConfirmarExcluir] = useState<Crianca | null>(null)
   const [excluindo, setExcluindo] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const [erro, setErro] = useState('')
 
   const filtroAtivo = Boolean(busca || turmaBusca)
 
   const buscar = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams()
-    if (busca) params.set('busca', busca)
-    if (turmaBusca) params.set('turma', turmaBusca)
-    const res = await fetch(`/api/criancas?${params}`, { cache: 'no-store' })
-    const lista = await res.json()
-    setCriancas(lista)
-    if (!busca && !turmaBusca) setTotal(lista.length)
-    setLoading(false)
+    setErro('')
+    try {
+      const params = new URLSearchParams()
+      if (busca) params.set('busca', busca)
+      if (turmaBusca) params.set('turma', turmaBusca)
+      const res = await fetch(`/api/criancas?${params}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Servidor respondeu ${res.status}`)
+      const lista = await res.json()
+      setCriancas(lista)
+      if (!busca && !turmaBusca) setTotal(lista.length)
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Falha ao carregar as crianças')
+      setCriancas([])
+    } finally {
+      setLoading(false)
+    }
   }, [busca, turmaBusca])
 
   useEffect(() => {
@@ -98,7 +107,16 @@ export default function CriancasPage() {
           <div className="card text-center py-10 text-gray-400 font-nunito">⏳ Carregando...</div>
         )}
 
-        {!loading && criancas.length === 0 && (
+        {!loading && erro && (
+          <div className="card text-center py-12 space-y-3 border-2 border-red-300 bg-red-50">
+            <div className="text-5xl">⚠️</div>
+            <h2 className="font-fredoka text-xl text-red-700">Não foi possível carregar as crianças</h2>
+            <p className="font-nunito text-sm text-gray-600">{erro}</p>
+            <button onClick={buscar} className="btn-primary text-sm px-4 py-2">🔄 Tentar novamente</button>
+          </div>
+        )}
+
+        {!loading && !erro && criancas.length === 0 && (
           <div className="card text-center py-14">
             <div className="text-6xl mb-3">🔍</div>
             <p className="font-fredoka text-xl text-gray-400">Nenhuma criança encontrada</p>
@@ -111,7 +129,7 @@ export default function CriancasPage() {
           </div>
         )}
 
-        {!loading && criancas.map((crianca) => (
+        {!loading && !erro && criancas.map((crianca) => (
           <div key={crianca.id}
             className={`card flex items-start gap-4 py-3 px-4 ${crianca.restricaoAlimentar ? 'border-2 border-amarelo bg-amarelo-claro' : ''}`}>
 
