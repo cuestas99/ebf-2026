@@ -77,21 +77,32 @@ export default function EntradaPage() {
     setEnviando(true)
     setErroCheckin('')
 
-    // O servidor decide o dia. Se ele recusar, nada é registrado.
+    // Rota pública do quiosque: o servidor decide o dia e recusa
+    // fora do período da EBF. `redirect: 'error'` evita que um redirect
+    // do middleware seja lido como sucesso.
     const respostas = await Promise.all(
       ids.map((criancaId) =>
-        fetch('/api/checkin', {
+        fetch('/api/entrada/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ criancaId }),
-        })
+          redirect: 'error',
+        }).catch(() => null)
       )
     )
 
-    const bloqueado = respostas.find((r) => r.status === 403)
+    const bloqueado = respostas.find((r) => r?.status === 403)
     if (bloqueado) {
       const { error } = await bloqueado.json().catch(() => ({ error: '' }))
       setErroCheckin(error || 'Check-in indisponível hoje.')
+      setEnviando(false)
+      return
+    }
+
+    // 201 = criado, 409 = já existia hoje. Qualquer outra coisa é falha.
+    const falhou = respostas.some((r) => !r || (r.status !== 201 && r.status !== 409))
+    if (falhou) {
+      setErroCheckin('Não foi possível registrar. Procure a recepção.')
       setEnviando(false)
       return
     }

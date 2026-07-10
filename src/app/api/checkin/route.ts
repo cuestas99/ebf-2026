@@ -1,7 +1,21 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { diaDoEvento, faltamDias, EVENTO_INICIO_LABEL, EVENTO_FIM_LABEL } from '@/lib/evento'
+import { getSession } from '@/lib/auth'
+import { diaDoEvento, TOTAL_DIAS } from '@/lib/evento'
+
+/**
+ * Rotas de check-in da RECEPÇÃO (autenticadas).
+ *
+ * Aqui não há trava de dia: a equipe precisa poder lançar ou corrigir
+ * a presença de qualquer dia do evento. A trava de "só o dia vigente"
+ * vale para o quiosque dos pais, em POST /api/entrada/checkin.
+ */
+
+function diaValido(dia: unknown): number | null {
+  const n = Number(dia)
+  return Number.isInteger(n) && n >= 1 && n <= TOTAL_DIAS ? n : null
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -21,61 +35,62 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { criancaId } = await req.json()
+  if (!(await getSession())) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
 
+  const body = await req.json()
+  const criancaId = Number(body.criancaId)
   if (!criancaId) {
     return NextResponse.json({ error: 'criancaId é obrigatório' }, { status: 400 })
   }
 
-  // O dia é sempre determinado pelo servidor — nunca pelo cliente.
-  // Isso impede check-in antecipado ou retroativo.
-  const hoje = diaDoEvento()
-  if (!hoje) {
-    const faltam = faltamDias()
-    const motivo = faltam > 0
-      ? `A EBF ainda não começou. O check-in abre no dia ${EVENTO_INICIO_LABEL}.`
-      : `A EBF foi encerrada em ${EVENTO_FIM_LABEL}. O check-in está fechado.`
-    return NextResponse.json({ error: motivo, foraDoEvento: true }, { status: 403 })
-  }
-
-  const dia = hoje.dia
-
-  const existente = await prisma.checkIn.findUnique({
-    where: { criancaId_dia: { criancaId: Number(criancaId), dia } },
-  })
-
-  if (existente) {
+  // Se a recepção não informar o dia, assume o dia corrente do evento.
+  const dia = diaValido(body.dia) ?? diaDoEvento()?.dia ?? null
+  if (!dia) {
     return NextResponse.json(
-      { error: 'Check-in já realizado hoje', checkin: existente },
-      { status: 409 },
+      { error: 'Informe o dia do evento (1 a 5).' },
+      { status: 400 },
     )
   }
 
+  const existente = await prisma.checkIn.findUnique({
+    where: { criancaId_dia: { criancaId, dia } },
+  })
+
+  if (existente) {
+    return NextResponse.json({ error: `Check-in já realizado no dia ${dia}`, checkin: existente }, { status: 409 })
+  }
+
   const checkin = await prisma.checkIn.create({
-    data: { criancaId: Number(criancaId), dia },
+    data: { criancaId, dia },
     include: { crianca: true },
   })
 
   return NextResponse.json(checkin, { status: 201 })
 }
 
-/** Marca (ou desmarca) a entrega da pulseira do dia de hoje. */
+/** Marca (ou desmarca) a entrega da pulseira. */
 export async function PATCH(req: NextRequest) {
-  const { criancaId, entregue } = await req.json()
+  if (!(await getSession())) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
 
+  const body = await req.json()
+  const criancaId = Number(body.criancaId)
   if (!criancaId) {
     return NextResponse.json({ error: 'criancaId é obrigatório' }, { status: 400 })
   }
 
-  const hoje = diaDoEvento()
-  if (!hoje) {
-    return NextResponse.json({ error: 'Fora do período da EBF', foraDoEvento: true }, { status: 403 })
+  const dia = diaValido(body.dia) ?? diaDoEvento()?.dia ?? null
+  if (!dia) {
+    return NextResponse.json({ error: 'Informe o dia do evento (1 a 5).' }, { status: 400 })
   }
 
-  const entregar = entregue !== false
+  const entregar = body.entregue !== false
 
   const checkin = await prisma.checkIn.update({
-    where: { criancaId_dia: { criancaId: Number(criancaId), dia: hoje.dia } },
+    where: { criancaId_dia: { criancaId, dia } },
     data: {
       pulseiraEntregue: entregar,
       pulseiraEntregueEm: entregar ? new Date() : null,
@@ -83,22 +98,28 @@ export async function PATCH(req: NextRequest) {
   }).catch(() => null)
 
   if (!checkin) {
-    return NextResponse.json({ error: 'Check-in não encontrado para hoje' }, { status: 404 })
+    return NextResponse.json({ error: `Check-in não encontrado no dia ${dia}` }, { status: 404 })
   }
 
   return NextResponse.json(checkin)
 }
 
 export async function DELETE(req: NextRequest) {
-  const { criancaId, dia } = await req.json()
+  if (!(await getSession())) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const criancaId = Number(body.criancaId)
+  const dia = diaValido(body.dia)
 
   if (!criancaId || !dia) {
     return NextResponse.json({ error: 'criancaId e dia são obrigatórios' }, { status: 400 })
   }
 
   await prisma.checkIn.delete({
-    where: { criancaId_dia: { criancaId: Number(criancaId), dia: Number(dia) } },
-  })
+    where: { criancaId_dia: { criancaId, dia } },
+  }).catch(() => null)
 
   return NextResponse.json({ ok: true })
 }

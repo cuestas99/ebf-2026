@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { TURMAS, TurmaKey } from '@/lib/turmas'
+import { TURMAS, TurmaKey, DIAS } from '@/lib/turmas'
 import TurmaBadge from '@/components/TurmaBadge'
 import PulseiraBadge from '@/components/PulseiraBadge'
 import Confetti from '@/components/Confetti'
@@ -24,7 +24,8 @@ function formatWhatsApp(tel: string) {
 }
 
 export default function CheckinPage() {
-  const { evento, carregando: carregandoEvento } = useEvento()
+  const { evento } = useEvento()
+  const [diaSelecionado, setDiaSelecionado] = useState<number | null>(null)
   const [busca, setBusca] = useState('')
   const [turmaBusca, setTurmaBusca] = useState('')
   const [filtroPresenca, setFiltroPresenca] = useState<FiltroPresenca>('todos')
@@ -35,7 +36,9 @@ export default function CheckinPage() {
   const [feedback, setFeedback] = useState<{ msg: string; tipo: 'ok' | 'erro' | 'ja' } | null>(null)
   const [confetti, setConfetti] = useState(false)
 
-  const diaAtual = evento?.dia ?? 0
+  // Por padrão o dia de hoje; a recepção pode trocar para corrigir lançamentos.
+  const diaAtual = diaSelecionado ?? evento?.dia ?? 1
+  const ehHoje = evento?.ativo === true && diaAtual === evento.dia
 
   // Lista sem filtro — o painel de pulseiras pendentes não deve
   // depender da busca que a recepção estiver digitando.
@@ -71,15 +74,15 @@ export default function CheckinPage() {
   }
 
   function pulseiraPendente(crianca: Crianca) {
-    const hoje = crianca.checkins.find((c) => c.dia === diaAtual)
-    return Boolean(hoje) && !hoje!.pulseiraEntregue
+    const doDia = crianca.checkins.find((c) => c.dia === diaAtual)
+    return doDia !== undefined && !doDia.pulseiraEntregue
   }
 
   async function marcarPulseira(crianca: Crianca, entregue: boolean) {
     const res = await fetch('/api/checkin', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ criancaId: crianca.id, entregue }),
+      body: JSON.stringify({ criancaId: crianca.id, dia: diaAtual, entregue }),
     })
     if (res.ok) {
       setFeedback({
@@ -97,17 +100,13 @@ export default function CheckinPage() {
 
   async function fazerCheckin(crianca: Crianca) {
     setConfirmar(null)
-    // O dia não é enviado: o servidor o determina e recusa fora do período.
     const res = await fetch('/api/checkin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ criancaId: crianca.id }),
+      body: JSON.stringify({ criancaId: crianca.id, dia: diaAtual }),
     })
     if (res.status === 409) {
-      setFeedback({ msg: `${crianca.nome} já fez check-in hoje!`, tipo: 'ja' })
-    } else if (res.status === 403) {
-      const { error } = await res.json().catch(() => ({ error: '' }))
-      setFeedback({ msg: error || 'Check-in indisponível hoje.', tipo: 'erro' })
+      setFeedback({ msg: `${crianca.nome} já fez check-in no Dia ${diaAtual}!`, tipo: 'ja' })
     } else if (res.ok) {
       setFeedback({ msg: `✅ ${crianca.nome} — Dia ${diaAtual} registrado!`, tipo: 'ok' })
       setConfetti(true)
@@ -144,46 +143,6 @@ export default function CheckinPage() {
     return true
   })
 
-  if (carregandoEvento) {
-    return <div className="card text-center py-16 text-gray-400 font-nunito">⏳ Carregando...</div>
-  }
-
-  if (!evento?.ativo) {
-    const antes = evento!.faltamDias > 0
-    return (
-      <div className="max-w-lg mx-auto space-y-4">
-        <div>
-          <h1 className="font-fredoka text-3xl text-roxo">✅ Check-in Diário</h1>
-          <p className="text-gray-500 text-sm font-nunito">Registre a presença das crianças</p>
-        </div>
-        <div className="card text-center py-12 space-y-4">
-          <div className="text-6xl">{antes ? '🔒' : '🎊'}</div>
-          <h2 className="font-fredoka text-2xl text-roxo">
-            {antes ? 'Check-in ainda não liberado' : 'EBF 2026 encerrada'}
-          </h2>
-          <p className="font-nunito text-gray-600">
-            {antes
-              ? <>O check-in abre automaticamente no dia <strong className="text-roxo">{evento!.inicioLabel}</strong>, primeiro dia da EBF.</>
-              : <>O período de check-in foi encerrado em <strong className="text-roxo">{evento!.fimLabel}</strong>.</>}
-          </p>
-          <div className="bg-roxo-claro border-2 border-roxo/30 rounded-card p-4 inline-block">
-            <p className="font-nunito text-sm text-gray-600">
-              EBF 2026 · {evento!.inicioLabel} a {evento!.fimLabel}
-            </p>
-            {antes && (
-              <p className="font-fredoka text-roxo text-xl mt-1">
-                Faltam {evento!.faltamDias} {evento!.faltamDias === 1 ? 'dia' : 'dias'}
-              </p>
-            )}
-          </div>
-          <p className="text-xs text-gray-400 font-nunito">
-            Não é possível registrar presença antecipada ou retroativa.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
       <Confetti ativo={confetti} />
@@ -193,21 +152,45 @@ export default function CheckinPage() {
         <p className="text-gray-500 text-sm font-nunito">Registre a presença das crianças</p>
       </div>
 
-      {/* Dia atual — definido pelo servidor, não editável */}
+      {/* Seletor de dia — a recepção pode lançar/corrigir qualquer dia */}
       <div className="card">
-        <div className="bg-roxo rounded-card p-4 text-white border-2 border-roxo-escuro flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <p className="font-fredoka text-amarelo text-xl">
-              📅 Dia {evento.dia} de {evento.totalDias} · {evento.nome}
-            </p>
-            <p className="font-nunito text-white/70 text-xs mt-0.5">
-              {evento.dataHoje} · check-in liberado apenas hoje
-            </p>
-          </div>
-          <span className="bg-white/15 border border-white/30 rounded-btn px-3 py-1 font-fredoka text-xs">
-            🔒 Dia travado
-          </span>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <p className="font-fredoka text-gray-500 text-sm">Dia do evento:</p>
+          {evento?.ativo && !ehHoje && (
+            <button onClick={() => setDiaSelecionado(null)}
+              className="text-xs font-nunito font-bold text-roxo hover:underline">
+              ↩️ Voltar para hoje (Dia {evento.dia})
+            </button>
+          )}
         </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {DIAS.map(({ num, label }) => {
+            const hoje = evento?.ativo && evento.dia === num
+            return (
+              <button key={num} onClick={() => setDiaSelecionado(num)}
+                className={`px-4 py-2 rounded-btn font-fredoka text-sm transition-all relative ${
+                  diaAtual === num
+                    ? 'bg-roxo text-white shadow-cartoon -translate-y-0.5'
+                    : 'bg-white border-2 border-[#d6c4a8] text-gray-600 hover:border-roxo hover:text-roxo'
+                }`}>
+                {label}
+                {hoje && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-amarelo text-gray-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-amarelo-escuro font-nunito">
+                    hoje
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {!ehHoje && (
+          <p className="mt-3 text-xs font-nunito text-amber-700 bg-amarelo-claro border border-amarelo rounded-card px-3 py-2">
+            ⚠️ Você está lançando presença no <strong>Dia {diaAtual}</strong>
+            {evento?.ativo ? `, que não é hoje (Dia ${evento.dia}).` : ', fora do período da EBF.'}
+          </p>
+        )}
 
         {/* Contadores */}
         <div className="grid grid-cols-3 gap-3 mt-4">
@@ -232,7 +215,7 @@ export default function CheckinPage() {
               🎗️ Pulseiras a entregar ({pendentes.length})
             </h2>
             <p className="text-xs text-gray-600 font-nunito">
-              Fizeram check-in hoje e ainda não retiraram
+              Fizeram check-in no Dia {diaAtual} e ainda não retiraram
             </p>
           </div>
 
@@ -263,7 +246,7 @@ export default function CheckinPage() {
       ) : presentesHoje > 0 && (
         <div className="card border-2 border-green-400 bg-green-50 text-center py-3">
           <p className="font-fredoka text-green-700">
-            🎗️ Todas as {presentesHoje} pulseiras de hoje foram entregues!
+            🎗️ Todas as {presentesHoje} pulseiras do Dia {diaAtual} foram entregues!
           </p>
         </div>
       )}
