@@ -25,6 +25,7 @@ export default async function CertificadoPage({ params }: { params: { id: string
           .no-print { display: none !important; }
           body { margin: 0; background: white; }
           .certificado { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 40px !important; }
+          .assinatura { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         @page { size: A4 landscape; margin: 0; }
       `}</style>
@@ -66,7 +67,7 @@ export default async function CertificadoPage({ params }: { params: { id: string
           <div className="space-y-1">
             <p className="font-nunito text-gray-600 text-lg">participou da</p>
             <p className="font-fredoka text-3xl text-roxo">Escola Bíblica de Férias 2026</p>
-            <p className="font-nunito text-gray-500">IPB Silva Jardim — Silva Jardim, RJ</p>
+            <p className="font-nunito text-gray-500">Igreja Presbiteriana Silva Jardim — Curitiba, PR</p>
           </div>
 
           {/* Dias */}
@@ -92,18 +93,21 @@ export default async function CertificadoPage({ params }: { params: { id: string
           </div>
 
           {/* Assinatura */}
-          <div className="pt-4 flex justify-around">
+          <div className="pt-6 flex justify-center">
             <div className="text-center">
-              <div className="w-40 border-b-2 border-gray-400 mb-2 mx-auto" />
-              <p className="font-nunito text-gray-500 text-sm">Coordenação EBF 2026</p>
-            </div>
-            <div className="text-center">
-              <div className="w-40 border-b-2 border-gray-400 mb-2 mx-auto" />
-              <p className="font-nunito text-gray-500 text-sm">Pastor / Presbítero</p>
+              {/* PNG com fundo transparente (recortado e limpo) */}
+              <img
+                src="/assinatura-levy.png"
+                alt="Assinatura do Rev. Levy Correa de Oliveira"
+                className="assinatura h-24 w-auto mx-auto object-contain -mb-4 relative"
+              />
+              <div className="w-72 border-b-2 border-gray-400 mb-2 mx-auto" />
+              <p className="font-fredoka text-gray-700">Rev. Levy Correa de Oliveira</p>
+              <p className="font-nunito text-gray-500 text-sm">Pastor</p>
             </div>
           </div>
 
-          <p className="font-nunito text-gray-400 text-xs">Escola Bíblica de Férias 2026 · Silva Jardim, RJ · 13 a 17 de julho de 2026</p>
+          <p className="font-nunito text-gray-400 text-xs">Escola Bíblica de Férias 2026 · Curitiba, PR · 13 a 17 de julho de 2026</p>
         </div>
       </div>
     </>
