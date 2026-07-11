@@ -41,6 +41,10 @@ export default function ImportarPage() {
   const [recalculando, setRecalculando] = useState(false)
   const [recalcOk, setRecalcOk] = useState<number | null>(null)
 
+  const [totalCheckins, setTotalCheckins] = useState<number | null>(null)
+  const [limpando, setLimpando] = useState(false)
+  const [limpezaOk, setLimpezaOk] = useState<number | null>(null)
+
   const carregarConferencia = useCallback(() => {
     fetch('/api/admin/importar', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
@@ -55,7 +59,31 @@ export default function ImportarPage() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => { carregarConferencia(); carregarPrevia() }, [carregarConferencia, carregarPrevia])
+  const carregarCheckins = useCallback(() => {
+    fetch('/api/admin/limpar-checkins', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setTotalCheckins(d.total) })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => { carregarConferencia(); carregarPrevia(); carregarCheckins() },
+    [carregarConferencia, carregarPrevia, carregarCheckins])
+
+  async function limparCheckins() {
+    if (!confirm('Apagar TODOS os check-ins do banco? Esta ação não pode ser desfeita.')) return
+    setLimpando(true); setLimpezaOk(null)
+    try {
+      const res = await fetch('/api/admin/limpar-checkins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmar: 'APAGAR' }),
+      })
+      const data = await res.json()
+      if (res.ok) { setLimpezaOk(data.apagados); setTotalCheckins(0) }
+    } finally {
+      setLimpando(false)
+    }
+  }
 
   async function importar() {
     setCarregando(true); setErro(''); setResultado(null)
@@ -262,6 +290,32 @@ export default function ImportarPage() {
             </button>
           </>
         )}
+      </div>
+
+      {/* Zona de perigo — limpeza de check-ins (TEMPORÁRIO) */}
+      <div className="card space-y-3 border-2 border-red-300">
+        <div>
+          <h2 className="font-fredoka text-red-600 text-xl">🧹 Limpar check-ins</h2>
+          <p className="text-gray-500 font-nunito text-sm mt-1">
+            Apaga <strong>todos</strong> os registros de presença do banco (os cadastros
+            das crianças permanecem). Use para remover dados de teste antes da EBF.
+          </p>
+        </div>
+
+        <div className="bg-red-50 border-2 border-red-200 rounded-card p-3 font-nunito text-sm text-gray-700">
+          Check-ins no banco agora: <strong>{totalCheckins ?? '...'}</strong>
+        </div>
+
+        {limpezaOk !== null && (
+          <div className="bg-green-50 border-2 border-green-400 rounded-card p-3 font-nunito text-sm text-green-700">
+            ✅ {limpezaOk} check-in(s) apagado(s). O banco de presenças está zerado.
+          </div>
+        )}
+
+        <button onClick={limparCheckins} disabled={limpando || totalCheckins === 0}
+          className="btn-danger w-full py-3 disabled:opacity-40 disabled:shadow-none disabled:translate-y-0">
+          {limpando ? '⏳ Apagando...' : totalCheckins === 0 ? 'Nenhum check-in para apagar' : '🗑️ Apagar todos os check-ins'}
+        </button>
       </div>
     </div>
   )
