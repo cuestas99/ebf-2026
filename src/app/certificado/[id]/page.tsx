@@ -98,12 +98,12 @@ export default async function CertificadoPage({ params }: { params: { id: string
               {/* PNG com fundo transparente (recortado e limpo) */}
               <img
                 src="/assinatura-levy.png"
-                alt="Assinatura do Rev. Levy Correa de Oliveira"
+                alt="Assinatura de Levy Correa de Oliveira"
                 className="assinatura h-24 w-auto mx-auto object-contain -mb-4 relative"
               />
               <div className="w-72 border-b-2 border-gray-400 mb-2 mx-auto" />
-              <p className="font-fredoka text-gray-700">Rev. Levy Correa de Oliveira</p>
-              <p className="font-nunito text-gray-500 text-sm">Pastor</p>
+              <p className="font-fredoka text-gray-700">Levy Correa de Oliveira</p>
+              <p className="font-nunito text-gray-500 text-sm">Reverendo</p>
             </div>
           </div>
 
