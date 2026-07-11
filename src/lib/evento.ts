@@ -9,6 +9,9 @@ export const DATAS_EBF = [
 ] as const
 
 export const TIMEZONE = 'America/Sao_Paulo'
+
+// Mínimo de dias de presença para a criança receber o certificado.
+export const CERTIFICADO_MIN_DIAS = 3
 // ───────────────────────────────────────────────────────────────
 
 export const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']

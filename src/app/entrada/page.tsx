@@ -4,6 +4,9 @@ import Image from 'next/image'
 import { TURMAS, TurmaKey } from '@/lib/turmas'
 import Confetti from '@/components/Confetti'
 import { useEvento } from '@/lib/useEvento'
+import { CERTIFICADO_MIN_DIAS } from '@/lib/evento'
+
+type CertificadoItem = { id: number; nome: string; turma: string }
 
 type CheckIn = { id: number; dia: number }
 type Crianca = {
@@ -28,10 +31,33 @@ export default function EntradaPage() {
   const [pulseiras, setPulseiras] = useState<{ nome: string; turma: string }[]>([])
   const [confetti, setConfetti] = useState(false)
   const [countdown, setCountdown] = useState(12)
+  const [countdownTotal, setCountdownTotal] = useState(12)
   const [erroCheckin, setErroCheckin] = useState('')
+  const [certificados, setCertificados] = useState<CertificadoItem[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
+  const timersRef = useRef<ReturnType<typeof setInterval>[]>([])
 
   const diaAtual = evento?.dia ?? 0
+  const ehUltimoDia = evento?.ativo === true && evento.dia === evento.totalDias
+
+  // No último dia da EBF, a criança que atingiu o mínimo de presenças
+  // pode baixar o certificado. `presencasExtras` conta um check-in que
+  // acabou de ser feito e ainda não está no objeto vindo da busca.
+  function elegívelCertificado(crianca: Crianca, presencasExtras = 0) {
+    return ehUltimoDia && crianca.checkins.length + presencasExtras >= CERTIFICADO_MIN_DIAS
+  }
+
+  function limparTimers() {
+    timersRef.current.forEach(clearInterval)
+    timersRef.current = []
+  }
+
+  // Ao abrir um certificado, cancela o retorno automático para o pai
+  // não ser interrompido no meio do download.
+  function abrirCertificado() {
+    limparTimers()
+    setCountdown(0)
+  }
 
   function formatarTelefone(val: string) {
     const nums = val.replace(/\D/g, '').slice(0, 11)
@@ -110,16 +136,30 @@ export default function EntradaPage() {
     const confirmadas = criancas.filter((c) => selecionadas.has(c.id))
     setNomesConfirmados(confirmadas.map((c) => c.nome.split(' ')[0]))
     setPulseiras(confirmadas.map((c) => ({ nome: c.nome.split(' ')[0], turma: c.turma })))
+
+    // Este check-in soma 1 presença ao que veio da busca.
+    const comCertificado = confirmadas
+      .filter((c) => elegívelCertificado(c, 1))
+      .map((c) => ({ id: c.id, nome: c.nome, turma: c.turma }))
+    setCertificados(comCertificado)
+
     setEnviando(false)
     setConfetti(true)
     setEtapa('sucesso')
     setTimeout(() => setConfetti(false), 3000)
-    setCountdown(12)
-    const intervalo = setInterval(() => setCountdown((n) => n - 1), 1000)
-    setTimeout(() => { clearInterval(intervalo); reiniciar() }, 12000)
+
+    // Mais tempo quando há certificado para baixar.
+    const segundos = comCertificado.length > 0 ? 30 : 12
+    setCountdown(segundos)
+    setCountdownTotal(segundos)
+    limparTimers()
+    const intervalo = setInterval(() => setCountdown((n) => Math.max(n - 1, 0)), 1000)
+    const fim = setTimeout(() => { limparTimers(); reiniciar() }, segundos * 1000)
+    timersRef.current = [intervalo, fim as unknown as ReturnType<typeof setInterval>]
   }
 
   function reiniciar() {
+    limparTimers()
     setEtapa('telefone')
     setTelefone('')
     setCriancas([])
@@ -127,7 +167,37 @@ export default function EntradaPage() {
     setErroNaoEncontrado(false)
     setNomesConfirmados([])
     setErroCheckin('')
+    setCertificados([])
     setTimeout(() => inputRef.current?.focus(), 100)
+  }
+
+  function secaoCertificados(itens: CertificadoItem[]) {
+    if (itens.length === 0) return null
+    return (
+      <div className="bg-roxo-claro rounded-card border-2 border-roxo p-5 shadow-card space-y-3">
+        <div>
+          <p className="font-fredoka text-roxo text-xl">🎓 Certificado de presença</p>
+          <p className="font-nunito text-gray-600 text-sm">
+            {itens.length === 1 ? 'Disponível para download!' : 'Disponíveis para download!'} Toque para abrir e salvar.
+          </p>
+        </div>
+        {itens.map(({ id, nome, turma }) => {
+          const t = TURMAS[turma as TurmaKey]
+          return (
+            <a key={id} href={`/certificado/${id}`} target="_blank" rel="noopener noreferrer"
+              onClick={abrirCertificado}
+              className="flex items-center gap-3 rounded-card border-2 border-roxo bg-white p-3 hover:shadow-cartoon transition-all active:-translate-y-0.5">
+              <span className="w-10 h-10 rounded-full border-2 border-white shadow shrink-0 flex items-center justify-center text-lg"
+                style={{ backgroundColor: t?.hex, color: '#fff' }}>📄</span>
+              <span className="flex-1 text-left min-w-0">
+                <span className="block font-fredoka text-gray-800 truncate">{nome}</span>
+                <span className="block font-nunito text-xs text-roxo">Baixar certificado →</span>
+              </span>
+            </a>
+          )
+        })}
+      </div>
+    )
   }
 
   // ── TELA 0: CARREGANDO / FORA DO PERÍODO DA EBF ───────────────
@@ -343,6 +413,13 @@ export default function EntradaPage() {
             </button>
           )}
 
+          {/* Certificado para quem já fez o check-in de hoje e atingiu o mínimo */}
+          {secaoCertificados(
+            criancas
+              .filter((c) => temCheckin(c) && elegívelCertificado(c, 0))
+              .map((c) => ({ id: c.id, nome: c.nome, turma: c.turma }))
+          )}
+
           <button onClick={reiniciar} className="btn-secondary w-full py-3">
             ← Voltar
           </button>
@@ -401,17 +478,26 @@ export default function EntradaPage() {
           })}
         </div>
 
-        <div className="space-y-2">
-          <div className="w-full bg-[#e8d9c4] rounded-full h-3 overflow-hidden border border-[#d6c4a8]">
-            <div
-              className="h-full bg-roxo rounded-full transition-all duration-1000"
-              style={{ width: `${(countdown / 12) * 100}%` }}
-            />
+        {/* Certificado (último dia) */}
+        {secaoCertificados(certificados)}
+
+        {countdown > 0 ? (
+          <div className="space-y-2">
+            <div className="w-full bg-[#e8d9c4] rounded-full h-3 overflow-hidden border border-[#d6c4a8]">
+              <div
+                className="h-full bg-roxo rounded-full transition-all duration-1000"
+                style={{ width: `${(countdown / countdownTotal) * 100}%` }}
+              />
+            </div>
+            <p className="text-gray-400 font-nunito text-sm">
+              Voltando em {countdown} segundo{countdown !== 1 ? 's' : ''}...
+            </p>
           </div>
+        ) : (
           <p className="text-gray-400 font-nunito text-sm">
-            Voltando em {countdown} segundo{countdown !== 1 ? 's' : ''}...
+            Toque em <span className="font-bold">Próxima família</span> quando terminar. 😊
           </p>
-        </div>
+        )}
 
         <button
           onClick={reiniciar}
