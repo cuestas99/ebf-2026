@@ -1,14 +1,11 @@
 // ─── CONFIGURE AQUI AS DATAS DA EBF ───────────────────────────
 // Uma data por dia do evento, na ordem. Formato YYYY-MM-DD.
-//
-// ⚠️ DATAS TEMPORÁRIAS PARA TESTE — hoje (11/07) é o Dia 5.
-// Datas reais da EBF: 13 a 17/07/2026. REVERTER após o teste.
 export const DATAS_EBF = [
-  '2026-07-07', // Dia 1
-  '2026-07-08', // Dia 2
-  '2026-07-09', // Dia 3
-  '2026-07-10', // Dia 4
-  '2026-07-11', // Dia 5 (hoje — teste)
+  '2026-07-13', // Dia 1 - Segunda
+  '2026-07-14', // Dia 2 - Terça
+  '2026-07-15', // Dia 3 - Quarta
+  '2026-07-16', // Dia 4 - Quinta
+  '2026-07-17', // Dia 5 - Sexta
 ] as const
 
 export const TIMEZONE = 'America/Sao_Paulo'
