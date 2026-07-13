@@ -10,11 +10,24 @@ export async function GET() {
   })
 
   const totalCriancas = criancas.length
+  const totalCheckins = criancas.reduce((acc, c) => acc + c.checkins.length, 0)
+
+  // Frequência é calculada sobre os dias que JÁ aconteceram (tiveram ao menos
+  // um check-in), não sobre os 5 dias totais. Assim, no Dia 1 a frequência
+  // reflete a presença real do dia, e não fica artificialmente baixa.
+  const diasComCheckin = [1, 2, 3, 4, 5].filter((dia) =>
+    criancas.some((c) => c.checkins.some((ch) => ch.dia === dia))
+  ).length
+  const diasBase = Math.max(diasComCheckin, 1)
+
+  const frequenciaGeral = totalCriancas > 0
+    ? Math.round((totalCheckins / (totalCriancas * diasBase)) * 100)
+    : 0
 
   const porTurma = Object.keys(TURMAS).map((turma) => {
     const kids = criancas.filter((c) => c.turma === turma)
     const totalDias = kids.reduce((acc, k) => acc + k.checkins.length, 0)
-    const maxPossivel = kids.length * 5
+    const maxPossivel = kids.length * diasBase
 
     return {
       turma,
@@ -78,7 +91,7 @@ export async function GET() {
     totalDias: c.checkins.length,
   }))
 
-  return NextResponse.json({ totalCriancas, porTurma, porDia, porIdade, tabela }, {
+  return NextResponse.json({ totalCriancas, totalCheckins, frequenciaGeral, diasComCheckin, porTurma, porDia, porIdade, tabela }, {
     headers: { 'Cache-Control': 'no-store' },
   })
 }

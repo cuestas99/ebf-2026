@@ -27,8 +27,12 @@ async function getDashboardData() {
 export default async function Home() {
   const { totalCriancas, totalCheckins, porTurma, checkinsPorDia, comRestricao } = await getDashboardData()
 
+  // Frequência sobre os dias que já aconteceram (tiveram ao menos um
+  // check-in), não sobre os 5 dias totais — senão fica baixa demais no início.
+  const diasComCheckin = checkinsPorDia.filter((d) => d.count > 0).length
+  const diasBase = Math.max(diasComCheckin, 1)
   const frequenciaGeral = totalCriancas > 0
-    ? Math.round((totalCheckins / (totalCriancas * 5)) * 100)
+    ? Math.round((totalCheckins / (totalCriancas * diasBase)) * 100)
     : 0
 
   const diaAtual = diaDoEvento()

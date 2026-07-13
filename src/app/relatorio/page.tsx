@@ -222,9 +222,9 @@ export default function RelatorioPage() {
                     </div>
                     <div className={`ml-auto font-fredoka text-xl ${info?.texto}`}>{t.percentual}%</div>
                   </div>
-                  <div className="bg-[#f0e6d6] rounded-full h-3 mb-3 border border-[#e0d0bc]">
-                    <div className={`${info?.cor} h-3 rounded-full transition-all`}
-                      style={{ width: `${t.percentual}%` }} />
+                  <div className="bg-[#f0e6d6] rounded-full h-3 mb-3 border border-[#e0d0bc] overflow-hidden">
+                    <div className="h-3 rounded-full transition-all"
+                      style={{ width: `${t.percentual}%`, backgroundColor: info?.hex ?? '#8B3FBE' }} />
                   </div>
                   <div className="grid grid-cols-5 gap-1">
                     {t.porDia.map(({ dia, presentes }) => (
