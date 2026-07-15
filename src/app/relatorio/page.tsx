@@ -154,6 +154,7 @@ export default function RelatorioPage() {
           <p className="text-gray-500 text-sm font-nunito">{data.totalCriancas} crianças cadastradas</p>
         </div>
         <div className="flex gap-2">
+          <a href="/relatorio/cadastros" className="btn-secondary">📋 Cadastros por dia</a>
           <button onClick={carregarDados} disabled={loading}
             className="btn-secondary disabled:opacity-50 disabled:shadow-none disabled:translate-y-0">
             {loading ? '⏳' : '🔄'} Atualizar
